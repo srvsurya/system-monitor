@@ -1,0 +1,98 @@
+package handlers
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	"github.com/srvsurya/system-monitor/internal/alerts"
+	"github.com/srvsurya/system-monitor/internal/models"
+)
+
+// GetActiveAlerts returns all alerts where status = true
+func GetActiveAlerts(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var activeAlerts []models.Alert
+		err := db.Select(&activeAlerts, `
+			SELECT * FROM alerts WHERE status = true ORDER BY triggered_at DESC
+		`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch active alerts"})
+			return
+		}
+		c.JSON(http.StatusOK, activeAlerts)
+	}
+}
+
+// GetAlertHistory returns all alerts regardless of status
+func GetAlertHistory(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var allAlerts []models.Alert
+		err := db.Select(&allAlerts, `
+			SELECT * FROM alerts ORDER BY triggered_at DESC
+		`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch alert history"})
+			return
+		}
+		c.JSON(http.StatusOK, allAlerts)
+	}
+}
+
+// CreateRule inserts a new alert rule and reloads the engine
+func CreateRule(db *sqlx.DB, engine *alerts.Engine) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var input struct {
+			Metric          string  `json:"metric"           binding:"required"`
+			Operator        string  `json:"operator"         binding:"required"`
+			Threshold       float64 `json:"threshold"        binding:"required"`
+			DurationSeconds int     `json:"duration_seconds" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		var rule models.AlertRule
+		err := db.QueryRowx(`
+			INSERT INTO alert_rules (metric, operator, threshold, duration_seconds)
+			VALUES ($1, $2, $3, $4)
+			RETURNING *`,
+			input.Metric, input.Operator, input.Threshold, input.DurationSeconds,
+		).StructScan(&rule)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create rule"})
+			return
+		}
+
+		engine.ReloadRules()
+		c.JSON(http.StatusCreated, rule)
+	}
+}
+
+// DeleteRule removes an alert rule and reloads the engine
+func DeleteRule(db *sqlx.DB, engine *alerts.Engine) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid rule id"})
+			return
+		}
+
+		result, err := db.Exec(`DELETE FROM alert_rules WHERE id = $1`, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete rule"})
+			return
+		}
+
+		rows, _ := result.RowsAffected()
+		if rows == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "rule not found"})
+			return
+		}
+
+		engine.ReloadRules() // refer to engine.go, it's for pulling the latest rule table once the table has been modified.
+		c.JSON(http.StatusOK, gin.H{"message": "rule deleted"})
+	}
+}

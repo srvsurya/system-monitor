@@ -9,6 +9,8 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
+	"github.com/srvsurya/system-monitor/internal/alerts"
+	"github.com/srvsurya/system-monitor/internal/models"
 )
 
 type jobKind int
@@ -39,15 +41,6 @@ type result struct {
 }
 
 // metricRow is what we INSERT — one complete row per tick.
-type metricRow struct {
-	CPUUsage    float64 `db:"cpu_usage"`
-	MemoryUsed  int     `db:"memory_used"`
-	MemoryTotal int     `db:"memory_total"`
-	DiskUsed    int     `db:"disk_used"`
-	DiskTotal   int     `db:"disk_total"`
-	NetUpload   float64 `db:"net_upload"`
-	NetDownload float64 `db:"net_download"`
-}
 
 const (
 	workerCount   = 5
@@ -56,21 +49,23 @@ const (
 )
 
 type Collector struct {
-	db      *sqlx.DB
-	jobs    chan jobKind
-	results chan result
-	done    chan struct{}
+	db          *sqlx.DB
+	alertEngine *alerts.Engine
+	jobs        chan jobKind
+	results     chan result
+	done        chan struct{}
 
 	lastNetBytes *net.IOCountersStat
 	lastNetTime  time.Time
 }
 
-func New(db *sqlx.DB) *Collector {
+func New(db *sqlx.DB, alertEngine *alerts.Engine) *Collector {
 	return &Collector{
-		db:      db,
-		jobs:    make(chan jobKind, jobBufferSize),
-		results: make(chan result, jobBufferSize),
-		done:    make(chan struct{}),
+		db:          db,
+		alertEngine: alertEngine,
+		jobs:        make(chan jobKind, jobBufferSize),
+		results:     make(chan result, jobBufferSize),
+		done:        make(chan struct{}),
 	}
 }
 
@@ -165,12 +160,15 @@ func (c *Collector) aggregator() {
 		if err := c.insertRow(row); err != nil {
 			log.Printf("[collector] DB insert error: %v", err)
 		}
+		if c.alertEngine != nil {
+			c.alertEngine.Evaluate(row)
+		}
 	}
 }
 
 // collectTick blocks until all 4 results for one tick arrive, or until done.
-func (c *Collector) collectTick() (metricRow, bool) {
-	var row metricRow
+func (c *Collector) collectTick() (models.SystemMetric, bool) {
+	var row models.SystemMetric
 	received := 0
 
 	for received < totalJobsPerTick {
@@ -179,14 +177,14 @@ func (c *Collector) collectTick() (metricRow, bool) {
 			c.mergeResult(&row, res)
 			received++
 		case <-c.done:
-			return metricRow{}, false
+			return models.SystemMetric{}, false
 		}
 	}
 
 	return row, true
 }
 
-func (c *Collector) mergeResult(row *metricRow, res result) {
+func (c *Collector) mergeResult(row *models.SystemMetric, res result) {
 	switch res.kind {
 	case jobCPU:
 		row.CPUUsage = res.cpuUsage
@@ -202,7 +200,7 @@ func (c *Collector) mergeResult(row *metricRow, res result) {
 	}
 }
 
-func (c *Collector) insertRow(row metricRow) error {
+func (c *Collector) insertRow(row models.SystemMetric) error {
 	_, err := c.db.Exec(`
 		INSERT INTO system_metrics
 			(cpu_usage, memory_used, memory_total, disk_used, disk_total, net_upload, net_download, timestamp)
