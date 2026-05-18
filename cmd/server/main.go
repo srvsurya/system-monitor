@@ -46,7 +46,11 @@ func main() {
 
 	col.Start()
 
-	r.Run(":8080")
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
 	log.Println("The server is running....")
 
 	<-quit

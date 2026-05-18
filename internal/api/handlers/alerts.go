@@ -79,7 +79,7 @@ func DeleteRule(db *sqlx.DB, engine *alerts.Engine) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid rule id"})
 			return
 		}
-
+		db.Exec(`DELETE FROM alerts WHERE rule_id = $1`, id) // to jump over the foreign key constraint
 		result, err := db.Exec(`DELETE FROM alert_rules WHERE id = $1`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete rule"})

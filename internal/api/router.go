@@ -29,15 +29,24 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine) *gin.Engine {
 	v1 := r.Group("api/v1")
 	v1.Use(middleware.AuthRequired(db))
 	{
-		v1.GET("/me", handlers.Me(db))
+		v1.GET("/me", handlers.Me(db)) // test user details
+
 		v1.POST("/logout", handlers.Logout(db))
+		//metric routes
 		v1.GET("/stats", middleware.RateLimit(rate.Every(time.Minute)/60, 5), handlers.GetCurrentStats(db))
 		v1.GET("/stats/history", middleware.RateLimit(rate.Every(time.Minute)/60, 5), handlers.GetStatsHistory(db))
+		// websocket init route
 		v1.GET("/ws", handlers.ServeWS(hub))
+		//alert routes
 		v1.GET("/alerts", handlers.GetActiveAlerts(db))
 		v1.GET("/alerts/history", handlers.GetAlertHistory(db))
 		v1.POST("/alerts/rules", handlers.CreateRule(db, engine))
-		v1.DELETE("/alerts/rules/:id", handlers.DeleteRule(db, engine))
+		v1.DELETE("/alerts/:id/rules", handlers.DeleteRule(db, engine))
+		// process manager routes
+		v1.POST("/processes/spawn", handlers.SpawnStressor(db)) // generates binary burner, for demo
+		v1.GET("/processes", handlers.ListProcesses(db))
+		v1.POST("/processes/:id/stop", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.StopProcess(db))
+		v1.POST("/processes/:id/restart", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.RestartProcess(db))
 	}
 	return r
 }
