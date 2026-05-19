@@ -10,6 +10,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 
+	"regexp"
+
+	"strings"
+
 	"github.com/srvsurya/system-monitor/internal/models"
 )
 
@@ -18,19 +22,24 @@ const tokenExpiry = 72 * time.Hour // token valid for 3 days
 // register func
 
 type RegisterRequest struct {
-	Name     string `json:"name"     binding:"required"`
-	Email    string `json:"email"    binding:"required"`
-	Password string `json:"password" binding:"required,min=8"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func Register(db *sqlx.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req RegisterRequest
+		var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
+		// email valid?
+		if !emailRegex.MatchString(req.Email) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Not a Valid Email"})
+			return
+		}
 		// email already exists check
 		var count int
 		db.Get(&count, `SELECT COUNT(*) FROM users WHERE email = $1`, req.Email)
@@ -38,7 +47,25 @@ func Register(db *sqlx.DB) gin.HandlerFunc {
 			c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
 			return
 		}
-
+		// name empty?
+		if req.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Name field empty"})
+			return
+		}
+		// password data validation
+		if req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Nothing entered in the Password field"})
+			return
+		}
+		if len(req.Password) < 8 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Password needs atleast 8 characters"})
+			return
+		}
+		specialChars := "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~"
+		if !strings.ContainsAny(req.Password, specialChars) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Password should atleast contain one special character"})
+			return
+		}
 		// Hash password
 		hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
@@ -69,8 +96,8 @@ func Register(db *sqlx.DB) gin.HandlerFunc {
 // login func
 
 type LoginRequest struct {
-	Email    string `json:"email"    binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func Login(db *sqlx.DB) gin.HandlerFunc {
@@ -78,6 +105,11 @@ func Login(db *sqlx.DB) gin.HandlerFunc {
 		var req LoginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		// email OR password empty?
+		if req.Email == "" || req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email or Password fields empty"})
 			return
 		}
 
