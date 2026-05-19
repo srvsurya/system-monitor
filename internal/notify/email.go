@@ -40,3 +40,13 @@ func (m *Mailer) SendAlert(metric string, operator string, threshold float64, va
 
 	return smtp.SendMail(addr, auth, m.from, m.to, msg) // main sender func
 }
+func (m *Mailer) SendVerification(to string, verifyURL string) error {
+	addr := fmt.Sprintf("%s:%s", m.host, m.port)
+	auth := smtp.PlainAuth("", m.user, m.password, m.host)
+
+	subject := "Subject: Verify your system-monitor account\r\n"
+	body := fmt.Sprintf("Click the link to verify your account:\r\n\r\n%s\r\n\r\nExpires in 24 hours.", verifyURL)
+	msg := []byte(subject + "\r\n" + body)
+
+	return smtp.SendMail(addr, auth, m.from, []string{to}, msg)
+}

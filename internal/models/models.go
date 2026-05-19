@@ -21,6 +21,7 @@ type User struct {
 	HashedPassword string     `db:"hashed_password" json:"-"`
 	RegisteredOn   time.Time  `db:"registered_on"   json:"registered_on"`
 	LastLogged     *time.Time `db:"last_logged"     json:"last_logged"`
+	Verified       bool       `db:"verified" json:"verified"`
 } // LastLogged can be NULL and it can't be represented with a regular time.Time, hence we use pointer
 
 type Session struct {

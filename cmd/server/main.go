@@ -32,7 +32,7 @@ func main() {
 		}
 	})
 
-	r := api.NewRouter(db.DB, alertEngine)
+	r := api.NewRouter(db.DB, alertEngine, mailer)
 	// wrap gin inside http.Server so we can call the func Shutdown() on it
 	srv := &http.Server{
 		Addr:    ":8080",

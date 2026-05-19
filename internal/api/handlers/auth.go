@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -8,8 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jmoiron/sqlx"
+	"github.com/srvsurya/system-monitor/internal/notify"
 	"golang.org/x/crypto/bcrypt"
 
+	"encoding/hex"
 	"regexp"
 
 	"strings"
@@ -27,7 +31,15 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
-func Register(db *sqlx.DB) gin.HandlerFunc {
+func GenerateToken() (string, error) {
+	byteString := make([]byte, 32)
+	if _, err := rand.Read(byteString); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(byteString), nil
+}
+
+func Register(db *sqlx.DB, mailer *notify.Mailer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req RegisterRequest
 		var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
@@ -90,6 +102,21 @@ func Register(db *sqlx.DB) gin.HandlerFunc {
 			"message": "account created",
 			"user_id": userID,
 		})
+		// Email verification sent to user's email
+		token, err := GenerateToken()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+			return
+		}
+
+		_, err = db.Exec(`
+			INSERT INTO verification_tokens (user_id, token, expires_at)
+			VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
+			userID, token,
+		)
+
+		verifyURL := fmt.Sprintf("http://localhost:8080/auth/verify?token=%s", token)
+		mailer.SendVerification(req.Email, verifyURL)
 	}
 }
 
@@ -126,6 +153,10 @@ func Login(db *sqlx.DB) gin.HandlerFunc {
 		err = bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			return
+		}
+		if !user.Verified {
+			c.JSON(http.StatusForbidden, gin.H{"error": "User email not verified"})
 			return
 		}
 
@@ -178,6 +209,38 @@ func Logout(db *sqlx.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "logged out"})
+	}
+}
+
+// email verification + update and delete from token tables
+func VerifyEmail(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.Query("token")
+		if token == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "token required"})
+			return
+		}
+
+		var userID int
+		var expiresAt time.Time
+		err := db.QueryRow(`
+            SELECT user_id, expires_at FROM verification_tokens
+            WHERE token = $1`, token,
+		).Scan(&userID, &expiresAt)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token"})
+			return
+		}
+		if time.Now().After(expiresAt) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "token expired"})
+			return
+		}
+
+		db.Exec(`UPDATE users SET verified = true WHERE id = $1`, userID)
+		db.Exec(`DELETE FROM verification_tokens WHERE token = $1`, token)
+
+		c.JSON(http.StatusOK, gin.H{"message": "email verified successfully"})
 	}
 }
 

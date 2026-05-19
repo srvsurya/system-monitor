@@ -8,10 +8,11 @@ import (
 	"github.com/srvsurya/system-monitor/internal/alerts"
 	"github.com/srvsurya/system-monitor/internal/api/handlers"
 	"github.com/srvsurya/system-monitor/internal/api/middleware"
+	"github.com/srvsurya/system-monitor/internal/notify"
 	"golang.org/x/time/rate"
 )
 
-func NewRouter(db *sqlx.DB, engine *alerts.Engine) *gin.Engine {
+func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.Engine {
 	r := gin.Default()
 	hub := handlers.NewHub()
 	go hub.Run()
@@ -23,8 +24,9 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine) *gin.Engine {
 	// route group for v1
 	auth := r.Group("/auth")
 	{
-		auth.POST("/register", middleware.RateLimit(rate.Every(time.Minute)/5, 5), handlers.Register(db))
-		auth.POST("/login", middleware.RateLimit(rate.Every(time.Minute)/5, 5), handlers.Login(db))
+		auth.POST("/register", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.Register(db, mailer))
+		auth.POST("/login", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.Login(db))
+		auth.GET("/verify", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.VerifyEmail(db))
 	}
 	v1 := r.Group("api/v1")
 	v1.Use(middleware.AuthRequired(db))
