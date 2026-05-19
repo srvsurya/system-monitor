@@ -57,7 +57,10 @@ func CreateRule(db *sqlx.DB, engine *alerts.Engine) gin.HandlerFunc {
 		var rule models.AlertRule
 		err := db.QueryRowx(`
 			INSERT INTO alert_rules (metric, operator, threshold, duration_seconds)
-			VALUES ($1, $2, $3, $4)
+			VALUES ($1, $2, $3, $4) ON CONFLICT (metric) DO UPDATE
+			SET operator = EXCLUDED.operator,
+			threshold = EXCLUDED.threshold,
+			duration_seconds = EXCLUDED.duration_seconds
 			RETURNING *`,
 			input.Metric, input.Operator, input.Threshold, input.DurationSeconds,
 		).StructScan(&rule)
