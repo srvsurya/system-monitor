@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/srvsurya/system-monitor/internal/models"
@@ -17,6 +19,7 @@ func GetCurrentStats(db *sqlx.DB) gin.HandlerFunc {
 		err := db.Get(&metric, `SELECT * FROM system_metrics ORDER BY TIMESTAMP DESC LIMIT 1`)
 		if err != nil {
 			c.JSON(500, gin.H{"message": "Query Failed"})
+			log.Printf("/stats metric query failed: %v", err)
 			return
 		}
 		c.JSON(200, metric)
@@ -46,11 +49,13 @@ func GetStatsHistory(db *sqlx.DB) gin.HandlerFunc {
 			from, err := time.Parse(time.RFC3339, fromStr)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' format, use RFC3339"})
+				log.Printf("Invalid from query format:%v", err)
 				return
 			}
 			to, err := time.Parse(time.RFC3339, toStr) // RFC3339 - a tz format. look it up if you forget
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'to' format, use RFC3339"})
+				log.Printf("Invalid to query format:%v", err)
 				return
 			}
 
@@ -70,6 +75,7 @@ func GetStatsHistory(db *sqlx.DB) gin.HandlerFunc {
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch history"})
+			log.Printf("Failed to fetch history:%v", err)
 			return
 		}
 

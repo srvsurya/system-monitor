@@ -1,11 +1,15 @@
 package handlers
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
+
+	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -18,6 +22,7 @@ func ListProcesses(db *sqlx.DB) gin.HandlerFunc { // list out processes (all)
 		proc, err := process.Processes()
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to fetch the list of processes"})
+			log.Printf("Failed to fetch process list:%v", err)
 			return
 		}
 		type ProcessInfo struct {
@@ -52,26 +57,30 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid ID"})
+			log.Printf("Invalid ID from query params:%v", err)
 			return
 		}
 		var managed models.ManagedProcess
 		err = db.Get(&managed, `SELECT * FROM managed_processes WHERE id = $1`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Process not in the managed process list"})
+			log.Printf("Process not in managed list")
 			return
 		}
 		pid := managed.PID
 		process, err := os.FindProcess(pid)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not find process"})
+			log.Printf("Process does not exist in the OS")
 			return
 		}
-		if err := process.Kill(); err != nil {
+		if err := process.Kill(); err != nil { // check graceful shutdown viability
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop process"})
+			log.Printf("Failed to stop process: %v", err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
-		db.Exec(`UPDATE managed_processes SET status = stopped WHERE id = $1`, id)                                                    // Update the table in db after stopping the process
+		db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1`, id)                                                  // Update the table in db after stopping the process
 		db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES($1,$2,$3)`, pid, "Stop", "Process stopped via API") // Log into the system_actions table
 
 	}
@@ -81,6 +90,7 @@ func RestartProcess(db *sqlx.DB) gin.HandlerFunc {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			log.Printf("Invalid ID")
 			return
 		}
 
@@ -89,6 +99,7 @@ func RestartProcess(db *sqlx.DB) gin.HandlerFunc {
 		err = db.Get(&managed, `SELECT * FROM managed_processes WHERE id = $1`, id)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "process not in managed list"})
+			log.Printf("Process not managed in the list")
 			return
 		}
 
@@ -103,6 +114,7 @@ func RestartProcess(db *sqlx.DB) gin.HandlerFunc {
 		cmd := exec.Command("./stressor") // executable CPU burner
 		if err := cmd.Start(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to restart process"})
+			log.Printf("Failed to restart process: %v", err)
 			return
 		}
 
@@ -132,6 +144,7 @@ func SpawnStressor(db *sqlx.DB) gin.HandlerFunc {
 		cmd := exec.Command("./stressor")
 		if err := cmd.Start(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to spawn stressor"})
+			log.Printf("failed to create the stressor script: %v", err)
 			return
 		}
 
@@ -145,9 +158,71 @@ func SpawnStressor(db *sqlx.DB) gin.HandlerFunc {
 		).StructScan(&managed)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to register process"})
+			log.Printf("Failed to register process: %v", err)
 			return
 		}
 
 		c.JSON(http.StatusCreated, managed)
+	}
+}
+func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		pid, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Server error"})
+			log.Printf("String conversion error: %v", err)
+			return
+		}
+		proc, err := process.NewProcess(int32(pid))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Internal Server Error"})
+			log.Printf("error:%v", err)
+			return
+		}
+		name, err := proc.Name()
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			log.Printf("error:%v", err)
+			return
+		}
+		cmdline, err := proc.Cmdline()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			log.Printf("error:%v", err)
+			return
+		}
+		p := models.ManagedProcess{
+			PID:       int(proc.Pid),
+			Name:      name,
+			Command:   cmdline,
+			Status:    "running",
+			StartedAt: time.Now(),
+		}
+
+		req := models.ManagedProcess{}
+
+		err = db.Get(&req, `SELECT * FROM managed_processes WHERE PID = $1`, pid)
+		if err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Process is already being managed"})
+			log.Printf("Process already in the managed_processes table")
+			return
+		} else if err != sql.ErrNoRows {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			log.Printf("error:%v", err)
+			return
+		}
+		var id int
+		// db insert
+		err = db.QueryRow(`INSERT INTO managed_processes(pid,name,command,status,started_at) VALUES($1,$2,$3,$4,$5) RETURNING id`, p.PID, p.Name, p.Command, p.Status, p.StartedAt).Scan(&id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Failure"})
+			log.Printf("DB error:%v", err)
+			return
+		}
+		p.ID = id
+		c.JSON(http.StatusCreated, p)
+
 	}
 }

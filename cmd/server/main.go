@@ -14,6 +14,7 @@ import (
 	"github.com/srvsurya/system-monitor/internal/api"
 	"github.com/srvsurya/system-monitor/internal/collector"
 	"github.com/srvsurya/system-monitor/internal/db"
+	"github.com/srvsurya/system-monitor/internal/logger"
 	"github.com/srvsurya/system-monitor/internal/models"
 	"github.com/srvsurya/system-monitor/internal/notify"
 )
@@ -23,6 +24,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading env file")
 	}
+	//logger init
+	zaplog, err := logger.New(true)
+	if err != nil {
+		panic(err)
+	}
+	defer zaplog.Sync()
+
 	db.Connect()
 	db.RunMigrations()
 	mailer := notify.New()
