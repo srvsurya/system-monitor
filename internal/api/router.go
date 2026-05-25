@@ -3,6 +3,7 @@ package api
 import (
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/srvsurya/system-monitor/internal/alerts"
@@ -14,6 +15,13 @@ import (
 
 func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.Engine {
 	r := gin.Default()
+	// CORS
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+	}))
 	hub := handlers.NewHub()
 	go hub.Run()
 	go hub.StartBroadcasting(db)
