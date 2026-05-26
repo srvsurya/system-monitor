@@ -14,6 +14,11 @@ func AuthRequired(db *sqlx.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// gets the bearer token
 		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			if t := c.Query("token"); t != "" {
+				authHeader = "Bearer " + t
+			}
+		}
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
 			return
