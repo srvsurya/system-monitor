@@ -1,18 +1,35 @@
-export default function MetricCard({ title, value, unit, color = 'blue' }) {
-  const colors = {
-    blue: 'border-blue-500 text-blue-400',
-    green: 'border-green-500 text-green-400',
-    yellow: 'border-yellow-500 text-yellow-400',
-    red: 'border-red-500 text-red-400',
+export default function MetricCard({ title,value,unit,icon}) {
+  const getColor = (percent) => {
+    if (percent < 50) return 'text-green-500'
+    if (percent < 80) return 'text-yellow-500'
+    return 'text-red-500'
   }
 
+
   return (
-    <div className={`bg-gray-900 border-l-4 ${colors[color]} rounded-xl p-6`}>
-      <p className="text-gray-400 text-sm mb-1">{title}</p>
-      <p className="text-white text-3xl font-bold">
-        {value ?? '—'}
-        <span className="text-gray-400 text-base ml-1">{unit}</span>
-      </p>
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className="text-sm text-gray-500">{title}</p>
+        </div>
+        <div className={getColor(value)}>
+          {icon}
+        </div>
+      </div>
+      <div className="mb-3">
+        <div className="flex justify-between text-sm mb-1">
+          <span className="text-gray-600">Usage</span>
+          <span className={getColor(value)}>{value}{unit}</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className={`h-2 rounded-full transition-all ${
+              value < 50 ? 'bg-green-500' : value < 80 ? 'bg-yellow-500' : 'bg-red-500'
+            }`}
+            style={{ width: `${value}%` }}
+          />
+        </div>
+      </div>
     </div>
   )
 }

@@ -59,6 +59,7 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.E
 		v1.POST("/processes/stop/:id", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.StopProcess(db))
 		v1.POST("/processes/restart/:id", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.RestartProcess(db))
 		v1.POST("/processes/register", handlers.RegisterProcess(db))
+		v1.GET("/processes/managed", handlers.GetManagedProcesses(db)) // only managed processes
 	}
 	return r
 }

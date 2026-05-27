@@ -181,7 +181,6 @@ func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
 			return
 		}
 		name, err := proc.Name()
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			log.Printf("error:%v", err)
@@ -196,7 +195,7 @@ func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
 		p := models.ManagedProcess{
 			PID:       int(proc.Pid),
 			Name:      name,
-			Command:   cmdline,
+			Command:   &cmdline,
 			Status:    "running",
 			StartedAt: time.Now(),
 		}
@@ -223,6 +222,50 @@ func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
 		}
 		p.ID = id
 		c.JSON(http.StatusCreated, p)
+
+	}
+}
+func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var processes []models.ManagedProcess
+		type managed struct {
+			models.ManagedProcess
+			CPU    float64 `json:"cpu_percentage"`
+			Memory float32 `json:"memory_percentage"`
+		}
+		var info []managed
+
+		err := db.Select(&processes, `SELECT * FROM managed_processes`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal DB error"})
+			log.Printf("DB error:%v", err)
+			return
+		}
+		for _, p := range processes {
+			proc, err := process.NewProcess(int32(p.PID))
+			if err != nil {
+				log.Printf("skipping pid %d: %v", p.PID, err)
+				continue
+			}
+			cpu_util, err := proc.CPUPercent()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "OS error"})
+				log.Printf("Process CPU information cannot be retrieved:%v", err)
+				return
+			}
+			mem_util, err := proc.MemoryPercent()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "OS error"})
+				log.Printf("Process memory information cannot be retrieved:%v", err)
+				return
+			}
+			info = append(info, managed{
+				ManagedProcess: p,
+				CPU:            cpu_util,
+				Memory:         mem_util,
+			})
+		}
+		c.JSON(http.StatusOK, info)
 
 	}
 }

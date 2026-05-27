@@ -56,7 +56,7 @@ type ManagedProcess struct {
 	ID        int       `db:"id"         json:"id"`
 	PID       int       `db:"pid"        json:"pid"`
 	Name      string    `db:"name"       json:"name"`
-	Command   string    `db:"command"    json:"command"`
+	Command   *string   `db:"command"    json:"command"`
 	Status    string    `db:"status"     json:"status"`
 	StartedAt time.Time `db:"started_at" json:"started_at"`
 }

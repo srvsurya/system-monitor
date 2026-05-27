@@ -14,7 +14,7 @@ func AuthRequired(db *sqlx.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// gets the bearer token
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		if authHeader == "" { // exclusively for ws because ws can't set up custom headers. So, I set auth so that it takes token from query
 			if t := c.Query("token"); t != "" {
 				authHeader = "Bearer " + t
 			}
