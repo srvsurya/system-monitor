@@ -1,6 +1,6 @@
 import { useWS } from '../context/WSContext'
 import MetricCard from '../components/MetricCard'
-import Processes from '../components/ProcessSection'
+import Processes from './Processes'
 import { Cpu, HardDrive, Activity, MemoryStick} from 'lucide-react';
 
 export default function Dashboard() {

@@ -21,11 +21,11 @@ type Engine struct {
 	db      *sqlx.DB
 	rules   []models.AlertRule
 	state   map[int]RuleState
-	onAlert func(rule models.AlertRule, value float64)
+	onAlert func(rule models.AlertRule, value float64, emailAlert string)
 }
 
 // New creates a new Engine, loads rules from DB, and restores saved state if valid.
-func New(db *sqlx.DB, onAlert func(models.AlertRule, float64)) *Engine {
+func New(db *sqlx.DB, onAlert func(models.AlertRule, float64, string)) *Engine {
 	e := &Engine{
 		db:      db,
 		state:   make(map[int]RuleState),
@@ -102,7 +102,19 @@ func (e *Engine) fireAlert(rule models.AlertRule, value float64) {
 		rule.ID, rule.Metric, rule.Operator, rule.Threshold, value)
 
 	if e.onAlert != nil { // IF a callback exists somewhere, then only call it. in prod, just error handle or something
-		e.onAlert(rule, value)
+		if e.onAlert != nil {
+			var alertEmail *string
+			err := e.db.Get(&alertEmail, `
+				SELECT alert_email FROM users 
+				WHERE alert_email IS NOT NULL 
+				LIMIT 1
+			`)
+			if err != nil || alertEmail == nil {
+				log.Printf("[alerts] no alert email configured, skipping notification")
+				return
+			}
+			e.onAlert(rule, value, *alertEmail)
+		}
 	}
 }
 

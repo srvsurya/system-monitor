@@ -34,8 +34,8 @@ func main() {
 	db.Connect()
 	db.RunMigrations()
 	mailer := notify.New()
-	alertEngine := alerts.New(db.DB, func(rule models.AlertRule, value float64) {
-		if err := mailer.SendAlert(rule.Metric, rule.Operator, rule.Threshold, value); err != nil {
+	alertEngine := alerts.New(db.DB, func(rule models.AlertRule, value float64, emailAlert string) {
+		if err := mailer.SendAlert(emailAlert, rule.Metric, rule.Operator, rule.Threshold, value); err != nil {
 			log.Println("Sending email failed:", err)
 		}
 	})

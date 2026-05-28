@@ -27,7 +27,7 @@ func New() *Mailer {
 	}
 }
 
-func (m *Mailer) SendAlert(metric string, operator string, threshold float64, value float64) error {
+func (m *Mailer) SendAlert(to string, metric string, operator string, threshold float64, value float64) error {
 	addr := fmt.Sprintf("%s:%s", m.host, m.port)
 	auth := smtp.PlainAuth("", m.user, m.password, m.host)
 
@@ -38,7 +38,7 @@ func (m *Mailer) SendAlert(metric string, operator string, threshold float64, va
 	)
 	msg := []byte(subject + "\r\n" + body)
 
-	return smtp.SendMail(addr, auth, m.from, m.to, msg) // main sender func
+	return smtp.SendMail(addr, auth, m.from, []string{to}, msg) // main sender func
 }
 func (m *Mailer) SendVerification(to string, verifyURL string) error { // link sender to user's email
 	addr := fmt.Sprintf("%s:%s", m.host, m.port)

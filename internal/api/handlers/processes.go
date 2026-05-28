@@ -202,7 +202,7 @@ func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
 
 		req := models.ManagedProcess{}
 
-		err = db.Get(&req, `SELECT * FROM managed_processes WHERE PID = $1`, pid)
+		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = $1`, name)
 		if err == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Process is already being managed"})
 			log.Printf("Process already in the managed_processes table")
@@ -242,30 +242,37 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 			return
 		}
 		for _, p := range processes {
-			proc, err := process.NewProcess(int32(p.PID))
-			if err != nil {
-				log.Printf("skipping pid %d: %v", p.PID, err)
-				continue
+			cpu := 0.0
+			mem := float32(0.0)
+
+			if p.Status == "running" {
+				proc, err := process.NewProcess(int32(p.PID))
+				if err == nil {
+					cpu, _ = proc.CPUPercent()
+					mem, _ = proc.MemoryPercent()
+				}
 			}
-			cpu_util, err := proc.CPUPercent()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "OS error"})
-				log.Printf("Process CPU information cannot be retrieved:%v", err)
-				return
-			}
-			mem_util, err := proc.MemoryPercent()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "OS error"})
-				log.Printf("Process memory information cannot be retrieved:%v", err)
-				return
-			}
+
 			info = append(info, managed{
 				ManagedProcess: p,
-				CPU:            cpu_util,
-				Memory:         mem_util,
+				CPU:            cpu,
+				Memory:         mem,
 			})
 		}
 		c.JSON(http.StatusOK, info)
 
+	}
+}
+func UpdatePinnedStatus(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			log.Printf("Conversion error:%v", err)
+			return
+		}
+		db.Exec(`UPDATE managed_processes SET pinned = NOT pinned WHERE pid = $1`, id)
+
+		c.JSON(http.StatusOK, gin.H{"message": "Pinned status updated"})
 	}
 }

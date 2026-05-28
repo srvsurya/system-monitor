@@ -22,6 +22,7 @@ type User struct {
 	RegisteredOn   time.Time  `db:"registered_on"   json:"registered_on"`
 	LastLogged     *time.Time `db:"last_logged"     json:"last_logged"`
 	Verified       bool       `db:"verified" json:"verified"`
+	AlertEmail     *string    `db:"alert_email" json:"alert_email"`
 } // LastLogged can be NULL and it can't be represented with a regular time.Time, hence we use pointer
 
 type Session struct {
@@ -59,6 +60,7 @@ type ManagedProcess struct {
 	Command   *string   `db:"command"    json:"command"`
 	Status    string    `db:"status"     json:"status"`
 	StartedAt time.Time `db:"started_at" json:"started_at"`
+	Pinned    bool      `db:"pinned" json:"pinned"`
 }
 
 type SystemAction struct {

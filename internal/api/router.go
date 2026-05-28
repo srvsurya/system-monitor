@@ -18,7 +18,7 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.E
 	// CORS
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
-		AllowMethods:     []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}))
@@ -39,8 +39,12 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.E
 	v1 := r.Group("api/v1")
 	v1.Use(middleware.AuthRequired(db))
 	{
-		v1.GET("/me", handlers.Me(db)) // test user details
+		// user related endpoints
 
+		v1.GET("/me", handlers.Me(db)) // test user details
+		v1.GET("/user/settings", handlers.GetUserSettings(db))
+		v1.PATCH("/user/settings", handlers.UpdateUserSettings(db))
+		//logout
 		v1.POST("/logout", handlers.Logout(db))
 		//metric routes
 		v1.GET("/stats", middleware.RateLimit(rate.Every(time.Minute)/60, 5), handlers.GetCurrentStats(db))
@@ -58,8 +62,9 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.E
 		v1.GET("/processes", handlers.ListProcesses(db))
 		v1.POST("/processes/stop/:id", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.StopProcess(db))
 		v1.POST("/processes/restart/:id", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.RestartProcess(db))
-		v1.POST("/processes/register", handlers.RegisterProcess(db))
+		v1.POST("/processes/register/:id", handlers.RegisterProcess(db))
 		v1.GET("/processes/managed", handlers.GetManagedProcesses(db)) // only managed processes
+		v1.PATCH("/processes/managed/:id/:pin", handlers.UpdatePinnedStatus(db))
 	}
 	return r
 }
