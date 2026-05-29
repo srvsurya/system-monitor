@@ -251,10 +251,14 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 
 			if p.Status == "running" {
 				proc, err := process.NewProcess(int32(p.PID))
-				if err == nil {
-					cpu, _ = proc.CPUPercent()
-					mem, _ = proc.MemoryPercent()
+				if err != nil {
+					db.Exec(`DELETE FROM system_actions WHERE process_id = $1`, p.ID)
+					result, dbErr := db.Exec(`DELETE FROM managed_processes WHERE id = $1`, p.ID)
+					log.Printf("Deleting stale process %d, result: %v, err: %v", p.ID, result, dbErr)
+					continue
 				}
+				cpu, _ = proc.CPUPercent()
+				mem, _ = proc.MemoryPercent()
 			}
 
 			info = append(info, managed{

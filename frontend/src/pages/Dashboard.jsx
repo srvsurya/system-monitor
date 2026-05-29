@@ -1,10 +1,25 @@
 import { useWS } from '../context/WSContext'
 import MetricCard from '../components/MetricCard'
 import Processes from './Processes'
-import { Cpu, HardDrive, Activity, MemoryStick} from 'lucide-react';
+import { Cpu, HardDrive, Activity, MemoryStick, Settings, LogOut} from 'lucide-react';
 import HistoryChart from '../components/HistoricalCharts';
+import ActiveAlerts from '../components/AlertSection';
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { metrics, connected } = useWS()
+  const { logout } = useAuth()
+  const handleLogout = async () => {
+    try {
+      await api.post('/api/v1/logout')
+    } catch (err) {
+      console.error('Logout error:', err)
+    } finally {
+      logout()
+      navigate('/login')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white p-8">
@@ -12,12 +27,30 @@ export default function Dashboard() {
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex-col">
-          <h1 className="text-black text-2xl font-bold">System Monitor</h1>
-          <p className="text-gray-600">Real-time system metrics and process management</p>
+            <h1 className="text-black text-2xl font-bold">System Monitor</h1>
+            <p className="text-gray-600">Real-time system metrics and process management</p>
           </div>
-          <span className={`text-xs px-3 py-1 rounded-full font-medium ${connected ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
-            {connected ? 'Live' : 'Disconnected'}
-          </span>
+          <div className="flex flex-col gap-5">
+            <div className="flex gap-2">
+              <button onClick={() => navigate("/settings")} 
+              className="bg-white shadow rounded-xl border border-black text-gray-600 text-xs p-2 hover:scale-110 transition-transform duration-200 cursor-pointer">
+                <div className="flex items-center gap-1">
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </div>
+              </button>
+              <button onClick={handleLogout}
+              className="bg-white shadow rounded-xl border border-black text-gray-600 text-xs p-2 hover:scale-110 transition-transform duration-200 cursor-pointer">
+                <div className="flex items-center gap-1">
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </div>
+              </button>
+            </div>
+            <span className={`text-xs px-3 py-1 rounded-full font-medium ${connected ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
+              {connected ? 'Live' : 'Disconnected'}
+            </span>
+          </div>
         </div>
 
         {!metrics ? (
@@ -39,6 +72,7 @@ export default function Dashboard() {
           <Processes />
         </div>
       </div>
+      <ActiveAlerts/>
       </div>
     </div>
   )
