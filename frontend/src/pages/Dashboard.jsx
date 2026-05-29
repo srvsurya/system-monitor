@@ -2,7 +2,7 @@ import { useWS } from '../context/WSContext'
 import MetricCard from '../components/MetricCard'
 import Processes from './Processes'
 import { Cpu, HardDrive, Activity, MemoryStick} from 'lucide-react';
-
+import HistoryChart from '../components/HistoricalCharts';
 export default function Dashboard() {
   const { metrics, connected } = useWS()
 
@@ -30,7 +30,15 @@ export default function Dashboard() {
             <MetricCard title="Network In" value={(metrics.net_download / 1024).toFixed(1)} unit="KB/s" icon={<Activity className="w-6 h-6" />}/>
           </div>
         )}
-      <div className="flex justify-end"><Processes/></div>
+        
+      <div className="flex flex-col lg:flex-row gap-6 mt-6">
+        <div className="flex-2 min-w-0">
+          <HistoryChart />
+        </div>
+        <div className="flex-1 min-w-0">
+          <Processes />
+        </div>
+      </div>
       </div>
     </div>
   )

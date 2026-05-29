@@ -55,6 +55,7 @@ func ListProcesses(db *sqlx.DB) gin.HandlerFunc { // list out processes (all)
 func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from managed
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
+		var pinned bool
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid ID"})
 			log.Printf("Invalid ID from query params:%v", err)
@@ -80,7 +81,10 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
-		db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1`, id)                                                  // Update the table in db after stopping the process
+		db.QueryRowx(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1 RETURNING pinned`, id).Scan(&pinned) // Update the table in db after stopping the process
+		if pinned == false {
+			db.Exec(`DELETE FROM managed_processes WHERE id = $1`, id)
+		}
 		db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES($1,$2,$3)`, pid, "Stop", "Process stopped via API") // Log into the system_actions table
 
 	}
@@ -235,7 +239,7 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 		}
 		var info []managed
 
-		err := db.Select(&processes, `SELECT * FROM managed_processes`)
+		err := db.Select(&processes, `SELECT * FROM managed_processes WHERE status = 'running' OR pinned = true`)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal DB error"})
 			log.Printf("DB error:%v", err)
@@ -255,7 +259,7 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 
 			info = append(info, managed{
 				ManagedProcess: p,
-				CPU:            cpu,
+				CPU:            cpu / 12, // display per core
 				Memory:         mem,
 			})
 		}
@@ -265,14 +269,19 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 }
 func UpdatePinnedStatus(db *sqlx.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var pinned bool
+		var status string
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			log.Printf("Conversion error:%v", err)
 			return
 		}
-		db.Exec(`UPDATE managed_processes SET pinned = NOT pinned WHERE pid = $1`, id)
+		db.QueryRowx(`UPDATE managed_processes SET pinned = NOT pinned WHERE id = $1 RETURNING pinned,status`, id).Scan(&pinned, &status)
+		if pinned == false && status == "stopped" {
+			db.Exec(`DELETE FROM managed_processes WHERE id = $1`, id)
+		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Pinned status updated"})
+		c.JSON(http.StatusOK, gin.H{"message": "Pinned status updated", "status": pinned})
 	}
 }

@@ -127,7 +127,7 @@ export default function Processes() {
   }
   const handlePin = async (id) => {
   try {
-    await api.patch(`/api/v1/processes/${id}/pin`)
+    await api.patch(`/api/v1/processes/${id}`)
     fetchProcesses()
   } catch (err) {
     console.error('Pin failed:', err)
@@ -138,8 +138,8 @@ export default function Processes() {
   if (error) return <div className="min-h-screen bg-gray-50 p-8 text-red-400">{error}</div>
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 mt-5 rounded-xl shadow">
-      <div className="max-w-4xl mx-auto">
+    <div className=" bg-gray-50 p-8 mt-5 rounded-xl shadow">
+      <div className="max-w-4xl">
         <div className="flex items-center justify-between gap-4 mb-8">
           <h1 className="text-xl font-bold text-gray-900">Process Control</h1>
           <button
@@ -182,7 +182,7 @@ export default function Processes() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col lg:flex-row gap-2">
                     <button
                       onClick={() => handlePin(process.id)}
                       className={`p-2 rounded-md transition-colors ${

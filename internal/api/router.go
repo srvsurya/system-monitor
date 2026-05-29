@@ -48,7 +48,7 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.E
 		v1.POST("/logout", handlers.Logout(db))
 		//metric routes
 		v1.GET("/stats", middleware.RateLimit(rate.Every(time.Minute)/60, 5), handlers.GetCurrentStats(db))
-		v1.GET("/stats/history", middleware.RateLimit(rate.Every(time.Minute)/60, 5), handlers.GetStatsHistory(db))
+		v1.GET("/stats/history", middleware.RateLimit(rate.Every(time.Second*5), 10), handlers.GetStatsHistory(db))
 		// websocket init route
 		v1.GET("/ws", handlers.ServeWS(hub))
 		//alert routes
@@ -64,7 +64,7 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.E
 		v1.POST("/processes/restart/:id", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.RestartProcess(db))
 		v1.POST("/processes/register/:id", handlers.RegisterProcess(db))
 		v1.GET("/processes/managed", handlers.GetManagedProcesses(db)) // only managed processes
-		v1.PATCH("/processes/managed/:id/:pin", handlers.UpdatePinnedStatus(db))
+		v1.PATCH("/processes/:id", handlers.UpdatePinnedStatus(db))
 	}
 	return r
 }

@@ -46,17 +46,23 @@ func GetStatsHistory(db *sqlx.DB) gin.HandlerFunc {
 		var metrics []models.SystemMetric
 
 		if fromStr != "" && toStr != "" {
-			from, err := time.Parse(time.RFC3339, fromStr)
+			from, err := time.Parse("2006-01-02T15:04:05", fromStr)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' format, use RFC3339"})
-				log.Printf("Invalid from query format:%v", err)
-				return
+				from, err = time.Parse(time.RFC3339, fromStr)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' format"})
+					log.Printf("Invalid from query format:%v", err)
+					return
+				}
 			}
-			to, err := time.Parse(time.RFC3339, toStr) // RFC3339 - a tz format. look it up if you forget
+			to, err := time.Parse("2006-01-02T15:04:05", toStr)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'to' format, use RFC3339"})
-				log.Printf("Invalid to query format:%v", err)
-				return
+				to, err = time.Parse(time.RFC3339, toStr)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'to' format"})
+					log.Printf("Invalid to query format:%v", err)
+					return
+				}
 			}
 
 			err = db.Select(&metrics, `
