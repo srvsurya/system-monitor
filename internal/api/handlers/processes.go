@@ -81,11 +81,11 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
-		db.QueryRowx(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1 RETURNING pinned`, id).Scan(&pinned) // Update the table in db after stopping the process
-		if pinned == false {
+		db.QueryRowx(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1 RETURNING pinned`, id).Scan(&pinned)
+		db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES($1,$2,$3)`, id, "Stop", "Process stopped via API")
+		if !pinned {
 			db.Exec(`DELETE FROM managed_processes WHERE id = $1`, id)
 		}
-		db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES($1,$2,$3)`, pid, "Stop", "Process stopped via API") // Log into the system_actions table
 
 	}
 }
@@ -206,7 +206,16 @@ func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
 
 		req := models.ManagedProcess{}
 
-		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = $1`, name)
+		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = $1 AND status = 'stopped'`)
+		if err == nil {
+			db.Exec(`UPDATE managed_processes SET pid = $1, command = $2, status = 'running', started_at = $3 WHERE id = $4`,
+				p.PID, p.Command, p.StartedAt, req.ID)
+			p.ID = req.ID
+			c.JSON(http.StatusOK, p)
+			return
+		}
+
+		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = $1 AND status = 'running'`, name)
 		if err == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Process is already being managed"})
 			log.Printf("Process already in the managed_processes table")
@@ -252,10 +261,8 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 			if p.Status == "running" {
 				proc, err := process.NewProcess(int32(p.PID))
 				if err != nil {
-					db.Exec(`DELETE FROM system_actions WHERE process_id = $1`, p.ID)
-					result, dbErr := db.Exec(`DELETE FROM managed_processes WHERE id = $1`, p.ID)
-					log.Printf("Deleting stale process %d, result: %v, err: %v", p.ID, result, dbErr)
-					continue
+					db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1`, p.ID)
+					log.Printf("Stale process %d marked as stopped", p.ID)
 				}
 				cpu, _ = proc.CPUPercent()
 				mem, _ = proc.MemoryPercent()
