@@ -1,1 +1,0 @@
-ALTER TABLE managed_processes ADD COLUMN pinned BOOLEAN DEFAULT false;

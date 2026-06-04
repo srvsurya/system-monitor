@@ -1,1 +1,0 @@
-ALTER TABLE users ADD COLUMN alert_email VARCHAR(255);

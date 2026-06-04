@@ -205,7 +205,7 @@ func (c *Collector) insertRow(row models.SystemMetric) error {
 		INSERT INTO system_metrics
 			(cpu_usage, memory_used, memory_total, disk_used, disk_total, net_upload, net_download, timestamp)
 		VALUES
-			($1, $2, $3, $4, $5, $6, $7, NOW())`,
+			(?, ?, ?, ?, ?, ?, ?, ?)`,
 		row.CPUUsage,
 		row.MemoryUsed,
 		row.MemoryTotal,
@@ -213,6 +213,7 @@ func (c *Collector) insertRow(row models.SystemMetric) error {
 		row.DiskTotal,
 		row.NetUpload,
 		row.NetDownload,
+		time.Now(),
 	)
 	return err
 }

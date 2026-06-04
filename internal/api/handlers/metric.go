@@ -67,15 +67,15 @@ func GetStatsHistory(db *sqlx.DB) gin.HandlerFunc {
 
 			err = db.Select(&metrics, `
 				SELECT * FROM system_metrics
-				WHERE timestamp BETWEEN $1 AND $2
+				WHERE timestamp BETWEEN ? AND ?
 				ORDER BY timestamp ASC
-				LIMIT $3
+				LIMIT ?
 			`, from, to, limit)
 		} else {
 			err = db.Select(&metrics, `
 				SELECT * FROM system_metrics
 				ORDER BY timestamp DESC
-				LIMIT $1
+				LIMIT ?
 			`, limit)
 		}
 

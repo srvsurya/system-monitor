@@ -19,6 +19,17 @@ export default function ActiveAlerts() {
     return () => clearInterval(interval)
   }, [])
 
+  function formatMetric(metric) {
+  const labels = {
+    cpu_usage: 'CPU',
+    memory_used: 'Memory',
+    disk_used: 'Disk',
+    net_upload: 'Network Upload',
+    net_download: 'Network Download',
+  }
+  return labels[metric] ?? metric
+}
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6">
       <h2 className="font-semibold text-gray-900 mb-4">System Alerts</h2>
@@ -38,10 +49,10 @@ export default function ActiveAlerts() {
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {alert.metric} exceeded threshold
+                    {formatMetric(alert.metric)} exceeded threshold
                   </p>
                   <p className="text-xs text-gray-500">
-                    Value: {alert.value?.toFixed(1)} • Threshold: {alert.threshold?.toFixed(1)} • Time: {alert.triggered_at.split('T')[1].slice(0,8)}
+                    Value: {alert.value?.toFixed(1)} • Threshold: {alert.threshold?.toFixed(1)} • Time: {new Date(alert.triggered_at).toLocaleTimeString()}
                   </p>
                 </div>
               </div>

@@ -39,7 +39,7 @@ func New(db *sqlx.DB, onAlert func(models.AlertRule, float64, string)) *Engine {
 // loadRules fetches all enabled alert rules from the DB.
 func (e *Engine) loadRules() {
 	var rules []models.AlertRule
-	err := e.db.Select(&rules, `SELECT * FROM alert_rules WHERE enabled = true`)
+	err := e.db.Select(&rules, `SELECT * FROM alert_rules WHERE enabled = 1`)
 	if err != nil {
 		log.Printf("[alerts] failed to load rules: %v", err)
 		return
@@ -91,7 +91,7 @@ func (e *Engine) Evaluate(metric models.SystemMetric) {
 func (e *Engine) fireAlert(rule models.AlertRule, value float64) {
 	_, err := e.db.Exec(`
 		INSERT INTO alerts (rule_id, value, threshold, status)
-		VALUES ($1, $2, $3, true)`,
+		VALUES (?, ?, ?, 1)`,
 		rule.ID, value, rule.Threshold,
 	)
 	if err != nil {
@@ -122,8 +122,8 @@ func (e *Engine) fireAlert(rule models.AlertRule, value float64) {
 func (e *Engine) resolveAlert(ruleID int) {
 	_, err := e.db.Exec(`
 		UPDATE alerts
-		SET status = false, resolved_at = NOW()
-		WHERE rule_id = $1 AND status = true`,
+		SET status = 0, resolved_at = datetime('now')
+		WHERE rule_id = ? AND status = 1`,
 		ruleID,
 	)
 	if err != nil {
@@ -143,7 +143,7 @@ func (e *Engine) SaveStateToDB() {
 	}
 	_, err = e.db.Exec(`
 		INSERT INTO alert_engine_state (id, state_json, saved_at)
-		VALUES (1, $1, NOW())
+		VALUES (1, ?, datetime('now'))
 		ON CONFLICT (id) DO UPDATE
 		SET state_json = EXCLUDED.state_json,
 		    saved_at   = EXCLUDED.saved_at`,
@@ -195,7 +195,7 @@ func extractMetricValue(m models.SystemMetric, metric string) float64 {
 	case "cpu_usage":
 		return m.CPUUsage
 	case "memory_used":
-		return float64(m.MemoryUsed)
+		return (float64(m.MemoryUsed) / float64(m.MemoryTotal)) * 100
 	case "disk_used":
 		return float64(m.DiskUsed)
 	case "net_upload":

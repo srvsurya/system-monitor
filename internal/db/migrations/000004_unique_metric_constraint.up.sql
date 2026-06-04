@@ -1,1 +1,0 @@
-ALTER TABLE alert_rules ADD CONSTRAINT unique_metric UNIQUE (metric);

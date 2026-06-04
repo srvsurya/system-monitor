@@ -39,7 +39,7 @@ func AuthRequired(db *sqlx.DB) gin.HandlerFunc {
 
 		// Stateful check — token must exist in sessions table
 		var count int
-		db.Get(&count, `SELECT COUNT(*) FROM sessions WHERE token = $1`, tokenStr)
+		db.Get(&count, `SELECT COUNT(*) FROM sessions WHERE token = ?`, tokenStr)
 		if count == 0 {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired or logged out"})
 			return

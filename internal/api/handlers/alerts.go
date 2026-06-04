@@ -15,9 +15,17 @@ import (
 // GetActiveAlerts returns all alerts where status = true
 func GetActiveAlerts(db *sqlx.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var activeAlerts []models.Alert
+		type AlertWithMetric struct {
+			models.Alert
+			Metric string `db:"metric" json:"metric"`
+		}
+		var activeAlerts []AlertWithMetric
 		err := db.Select(&activeAlerts, `
-			SELECT * FROM alerts WHERE status = true ORDER BY triggered_at DESC
+			SELECT alerts.*, alert_rules.metric
+			FROM alerts
+			JOIN alert_rules ON alerts.rule_id = alert_rules.id
+			WHERE alerts.status = 1
+			ORDER BY alerts.triggered_at DESC
 		`)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch active alerts"})
@@ -60,20 +68,20 @@ func CreateRule(db *sqlx.DB, engine *alerts.Engine) gin.HandlerFunc {
 		}
 
 		var rule models.AlertRule
-		err := db.QueryRowx(`
+		_, err := db.Exec(`
 			INSERT INTO alert_rules (metric, operator, threshold, duration_seconds)
-			VALUES ($1, $2, $3, $4) ON CONFLICT (metric) DO UPDATE
+			VALUES (?, ?, ?, ?) ON CONFLICT (metric) DO UPDATE
 			SET operator = EXCLUDED.operator,
 			threshold = EXCLUDED.threshold,
-			duration_seconds = EXCLUDED.duration_seconds
-			RETURNING *`,
+			duration_seconds = EXCLUDED.duration_seconds`,
 			input.Metric, input.Operator, input.Threshold, input.DurationSeconds,
-		).StructScan(&rule)
+		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create rule"})
 			log.Printf("Failed to create rule:%v", err)
 			return
 		}
+		db.Get(&rule, `SELECT * FROM alert_rules WHERE metric = ?`, input.Metric)
 
 		engine.ReloadRules()
 		c.JSON(http.StatusCreated, rule)
@@ -89,8 +97,8 @@ func DeleteRule(db *sqlx.DB, engine *alerts.Engine) gin.HandlerFunc {
 			log.Println("Invalid rule ID")
 			return
 		}
-		db.Exec(`DELETE FROM alerts WHERE rule_id = $1`, id) // to jump over the foreign key constraint
-		result, err := db.Exec(`DELETE FROM alert_rules WHERE id = $1`, id)
+		db.Exec(`DELETE FROM alerts WHERE rule_id = ?`, id) // to jump over the foreign key constraint
+		result, err := db.Exec(`DELETE FROM alert_rules WHERE id = ?`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete rule"})
 			log.Printf("Failed to delete rule: %v", err)

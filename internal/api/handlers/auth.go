@@ -96,18 +96,18 @@ func Register(db *sqlx.DB, mailer *notify.Mailer) gin.HandlerFunc {
 		}
 
 		// Insert user
-		var userID int
-		err = db.QueryRow(`
+		result, err := db.Exec(`
 			INSERT INTO users (name, email, hashed_password)
-			VALUES ($1, $2, $3)
-			RETURNING id`,
+			VALUES (?, ?, ?)`,
 			req.Name, req.Email, string(hashed),
-		).Scan(&userID)
+		) // sqlite change
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 			log.Printf("Failed to create user: %v", err)
 			return
 		}
+		userID64, _ := result.LastInsertId()
+		userID := int(userID64)
 
 		c.JSON(http.StatusCreated, gin.H{
 			"message": "account created",
@@ -123,8 +123,8 @@ func Register(db *sqlx.DB, mailer *notify.Mailer) gin.HandlerFunc {
 
 		_, err = db.Exec(`
 			INSERT INTO verification_tokens (user_id, token, expires_at)
-			VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
-			userID, token,
+			VALUES (?, ?, ?)`,
+			userID, token, time.Now().Add(24*time.Hour).Format("2006-01-02 15:04:05"),
 		)
 
 		verifyURL := fmt.Sprintf("http://localhost:8080/auth/verify?token=%s", token)
@@ -156,7 +156,7 @@ func Login(db *sqlx.DB) gin.HandlerFunc {
 
 		// Fetch user by email
 		var user models.User
-		err := db.Get(&user, `SELECT * FROM users WHERE email = $1`, req.Email)
+		err := db.Get(&user, `SELECT * FROM users WHERE email = ?`, req.Email)
 		if err != nil {
 			// Don't reveal whether email exists or password is wrong
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
@@ -195,8 +195,8 @@ func Login(db *sqlx.DB) gin.HandlerFunc {
 		// Store session in DB
 		_, err = db.Exec(`
 			INSERT INTO sessions (user_id, token, expires_at)
-			VALUES ($1, $2, $3)`,
-			user.ID, tokenStr, expiresAt,
+			VALUES (?, ?, ?)`,
+			user.ID, tokenStr, expiresAt.Format("2006-01-02 15:04:05"),
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
@@ -205,7 +205,7 @@ func Login(db *sqlx.DB) gin.HandlerFunc {
 		}
 
 		// Update last_logged
-		db.Exec(`UPDATE users SET last_logged = NOW() WHERE id = $1`, user.ID)
+		db.Exec(`UPDATE users SET last_logged = datetime('now') WHERE id = ?`, user.ID)
 
 		c.JSON(http.StatusOK, gin.H{
 			"token":      tokenStr,
@@ -221,7 +221,7 @@ func Logout(db *sqlx.DB) gin.HandlerFunc {
 		// Token already validated by middleware — just pull it out
 		token := c.GetString("token")
 
-		_, err := db.Exec(`DELETE FROM sessions WHERE token = $1`, token)
+		_, err := db.Exec(`DELETE FROM sessions WHERE token = ?`, token)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to logout"})
 			log.Printf("Logout failed: %v", err)
@@ -246,7 +246,7 @@ func VerifyEmail(db *sqlx.DB) gin.HandlerFunc { // triggers when verification li
 		var expiresAt time.Time
 		err := db.QueryRow(`
             SELECT user_id, expires_at FROM verification_tokens
-            WHERE token = $1`, token,
+            WHERE token = ?`, token,
 		).Scan(&userID, &expiresAt)
 
 		if err != nil {
@@ -260,8 +260,8 @@ func VerifyEmail(db *sqlx.DB) gin.HandlerFunc { // triggers when verification li
 			return
 		}
 
-		db.Exec(`UPDATE users SET verified = true WHERE id = $1`, userID)
-		db.Exec(`DELETE FROM verification_tokens WHERE token = $1`, token) // after update, entry from token table is deleted
+		db.Exec(`UPDATE users SET verified = true WHERE id = ?`, userID)
+		db.Exec(`DELETE FROM verification_tokens WHERE token = ?`, token) // after update, entry from token table is deleted
 
 		c.JSON(http.StatusOK, gin.H{"message": "email verified successfully"})
 	}
@@ -274,7 +274,7 @@ func Me(db *sqlx.DB) gin.HandlerFunc {
 		userID := c.GetInt("user_id") // set by middleware
 
 		var user models.User
-		err := db.Get(&user, `SELECT * FROM users WHERE id = $1`, userID)
+		err := db.Get(&user, `SELECT * FROM users WHERE id = ?`, userID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			log.Printf("User not found: %v", err)

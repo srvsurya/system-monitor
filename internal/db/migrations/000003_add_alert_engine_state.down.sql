@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS alert_engine_state;

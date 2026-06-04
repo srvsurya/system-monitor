@@ -12,6 +12,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/srvsurya/system-monitor/internal/models"
@@ -62,7 +63,7 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 			return
 		}
 		var managed models.ManagedProcess
-		err = db.Get(&managed, `SELECT * FROM managed_processes WHERE id = $1`, id)
+		err = db.Get(&managed, `SELECT * FROM managed_processes WHERE id = ?`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Process not in the managed process list"})
 			log.Printf("Process not in managed list")
@@ -81,10 +82,11 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
-		db.QueryRowx(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1 RETURNING pinned`, id).Scan(&pinned)
-		db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES($1,$2,$3)`, id, "Stop", "Process stopped via API")
+		db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = ?`, id)
+		db.QueryRow(`SELECT pinned FROM managed_processes WHERE id = ?`, id).Scan(&pinned)
+		db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES(? ,?, ?)`, id, "Stop", "Process stopped via API")
 		if !pinned {
-			db.Exec(`DELETE FROM managed_processes WHERE id = $1`, id)
+			db.Exec(`DELETE FROM managed_processes WHERE id = ?`, id)
 		}
 
 	}
@@ -100,7 +102,7 @@ func RestartProcess(db *sqlx.DB) gin.HandlerFunc {
 
 		// sandbox check
 		var managed models.ManagedProcess
-		err = db.Get(&managed, `SELECT * FROM managed_processes WHERE id = $1`, id)
+		err = db.Get(&managed, `SELECT * FROM managed_processes WHERE id = ?`, id)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "process not in managed list"})
 			log.Printf("Process not managed in the list")
@@ -127,13 +129,13 @@ func RestartProcess(db *sqlx.DB) gin.HandlerFunc {
 		// update managed_processes with new PID and status
 		db.Exec(`
 			UPDATE managed_processes
-			SET pid = $1, status = 'running'
-			WHERE id = $2`, newPID, id)
+			SET pid = ?, status = 'running'
+			WHERE id = ?`, newPID, id)
 
 		// log the action
 		db.Exec(`
 			INSERT INTO system_actions (process_id, action_type, reason)
-			VALUES ($1, 'restart', 'manual restart via API')`, id)
+			VALUES (?, 'restart', 'manual restart via API')`, id)
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": fmt.Sprintf("process restarted with new pid %d", newPID),
@@ -155,16 +157,18 @@ func SpawnStressor(db *sqlx.DB) gin.HandlerFunc {
 		pid := cmd.Process.Pid
 
 		var managed models.ManagedProcess
-		err := db.QueryRowx(`
+		result, err := db.Exec(`
 			INSERT INTO managed_processes (pid, name, status)
-			VALUES ($1, 'stressor', 'running')
-			RETURNING *`, pid,
-		).StructScan(&managed)
+			VALUES (?, 'stressor', 'running')`, pid,
+		)
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to register process"})
 			log.Printf("Failed to register process: %v", err)
 			return
 		}
+		insertedID, _ := result.LastInsertId()
+		db.Get(&managed, `SELECT * FROM managed_processes WHERE id = ?`, insertedID)
 
 		c.JSON(http.StatusCreated, managed)
 	}
@@ -206,16 +210,20 @@ func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
 
 		req := models.ManagedProcess{}
 
-		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = $1 AND status = 'stopped'`)
+		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = ? AND status = 'stopped'`, name)
 		if err == nil {
-			db.Exec(`UPDATE managed_processes SET pid = $1, command = $2, status = 'running', started_at = $3 WHERE id = $4`,
+			db.Exec(`UPDATE managed_processes SET pid = ?, command = ?, status = 'running', started_at = ? WHERE id = ?`,
 				p.PID, p.Command, p.StartedAt, req.ID)
 			p.ID = req.ID
 			c.JSON(http.StatusOK, p)
 			return
+		} else if err != sql.ErrNoRows {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			log.Printf("error checking stopped process:%v", err)
+			return
 		}
 
-		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = $1 AND status = 'running'`, name)
+		err = db.Get(&req, `SELECT * FROM managed_processes WHERE name = ? AND status = 'running'`, name)
 		if err == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Process is already being managed"})
 			log.Printf("Process already in the managed_processes table")
@@ -225,15 +233,15 @@ func RegisterProcess(db *sqlx.DB) gin.HandlerFunc {
 			log.Printf("error:%v", err)
 			return
 		}
-		var id int
 		// db insert
-		err = db.QueryRow(`INSERT INTO managed_processes(pid,name,command,status,started_at) VALUES($1,$2,$3,$4,$5) RETURNING id`, p.PID, p.Name, p.Command, p.Status, p.StartedAt).Scan(&id)
+		result, err := db.Exec(`INSERT INTO managed_processes(pid,name,command,status,started_at) VALUES(?,?,?,?,?)`, p.PID, p.Name, p.Command, p.Status, p.StartedAt)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Failure"})
 			log.Printf("DB error:%v", err)
 			return
 		}
-		p.ID = id
+		insertedID, _ := result.LastInsertId()
+		p.ID = int(insertedID)
 		c.JSON(http.StatusCreated, p)
 
 	}
@@ -261,7 +269,7 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 			if p.Status == "running" {
 				proc, err := process.NewProcess(int32(p.PID))
 				if err != nil {
-					db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = $1`, p.ID)
+					db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = ?`, p.ID)
 					log.Printf("Stale process %d marked as stopped", p.ID)
 				}
 				cpu, _ = proc.CPUPercent()
@@ -288,9 +296,10 @@ func UpdatePinnedStatus(db *sqlx.DB) gin.HandlerFunc {
 			log.Printf("Conversion error:%v", err)
 			return
 		}
-		db.QueryRowx(`UPDATE managed_processes SET pinned = NOT pinned WHERE id = $1 RETURNING pinned,status`, id).Scan(&pinned, &status)
+		db.Exec(`UPDATE managed_processes SET pinned = NOT pinned WHERE id = ?`, id)
+		db.QueryRow(`SELECT pinned,status FROM managed_processes WHERE id = ?`, id).Scan(&pinned, &status)
 		if pinned == false && status == "stopped" {
-			db.Exec(`DELETE FROM managed_processes WHERE id = $1`, id)
+			db.Exec(`DELETE FROM managed_processes WHERE id = ?`, id)
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Pinned status updated", "status": pinned})

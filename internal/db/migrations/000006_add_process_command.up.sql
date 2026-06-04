@@ -1,1 +1,0 @@
-ALTER TABLE managed_processes ADD COLUMN command VARCHAR(255);

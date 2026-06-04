@@ -1,1 +1,0 @@
-ALTER TABLE managed_processes DROP COLUMN command;

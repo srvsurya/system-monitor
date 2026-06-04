@@ -13,7 +13,7 @@ func GetUserSettings(db *sqlx.DB) gin.HandlerFunc {
 		userID := c.GetInt("user_id")
 
 		var alertEmail *string
-		err := db.Get(&alertEmail, `SELECT alert_email FROM users WHERE id = $1`, userID)
+		err := db.Get(&alertEmail, `SELECT alert_email FROM users WHERE id = ?`, userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch settings"})
 			log.Printf("Failed to fetch user settings: %v", err)
@@ -37,7 +37,7 @@ func UpdateUserSettings(db *sqlx.DB) gin.HandlerFunc {
 			return
 		}
 
-		_, err := db.Exec(`UPDATE users SET alert_email = $1 WHERE id = $2`, body.AlertEmail, userID)
+		_, err := db.Exec(`UPDATE users SET alert_email = ? WHERE id = ?`, body.AlertEmail, userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update settings"})
 			log.Printf("Failed to update alert email: %v", err)

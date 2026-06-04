@@ -1,49 +1,113 @@
 package db
 
 import (
-	"fmt"
 	"log"
 	"os"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	_ "modernc.org/sqlite"
 )
 
 var DB *sqlx.DB
 
 func Connect() {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		getEnv("DB_HOST", "localhost"),
-		getEnv("DB_PORT", "5432"),
-		getEnv("DB_USER", ""),
-		getEnv("DB_PASSWORD", ""),
-		getEnv("DB_NAME", ""),
-	)
+	path := os.Getenv("DB_PATH")
+	if path == "" {
+		path = "monitor.db"
+	}
 	var err error
-	DB, err = sqlx.Connect("pgx", dsn)
+	DB, err = sqlx.Connect("sqlite", path)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect to SQLite: %v", err)
 	}
-	log.Println("Database connection created successfully")
+	DB.SetMaxOpenConns(1)
+	DB.Exec("PRAGMA journal_mode=WAL;")  // for less aggressive locking by default, choose write head logging for better concurrency
+	DB.Exec("PRAGMA busy_timeout=5000;") // fallback
+	DB.Exec("PRAGMA foreign_keys=ON;")   // make sure foreign key constraint violations are enabled
+	initSchema()
+	DB.Exec(`UPDATE alerts SET status = 0 WHERE status = 1`) // cleaning stale alerts
+	log.Println("Cleaned up stale alerts")
+	log.Println("SQLite connected and schema ready")
 }
-func RunMigrations() {
-	m, err := migrate.New("file://internal/db/migrations",
-		"postgres://monitor_user:user@localhost:5432/system_monitor?sslmode=disable")
-	if err != nil {
-		log.Fatalf("Migration initialization failed: %v", err)
-	}
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("Migration failed:%v", err)
-	}
-	log.Println("Migrations applied succesfully")
-}
-func getEnv(key, fallback string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return fallback
+
+func initSchema() { // migrations moved to initSchema
+	schema := `
+    CREATE TABLE IF NOT EXISTS users (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        name             TEXT,
+        email            TEXT UNIQUE,
+        hashed_password  TEXT,
+        verified         INTEGER NOT NULL DEFAULT 0,
+        registered_on    TIMESTAMP DEFAULT (datetime('now')),
+        last_logged      TIMESTAMP,
+        alert_email      TEXT
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token       TEXT UNIQUE,
+        created_at  TIMESTAMP DEFAULT (datetime('now')),
+        expires_at  TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS system_metrics (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        cpu_usage     REAL,
+        memory_used   INTEGER,
+        memory_total  INTEGER,
+        disk_used     INTEGER,
+        disk_total    INTEGER,
+        net_upload    REAL,
+        net_download  REAL,
+        timestamp     TIMESTAMP DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS alert_rules (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        metric           TEXT UNIQUE,
+        operator         TEXT,
+        threshold        REAL,
+        enabled          INTEGER DEFAULT 1,
+        duration_seconds INTEGER,
+        created_at       TIMESTAMP DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS alerts (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        rule_id      INTEGER REFERENCES alert_rules(id),
+        value        REAL,
+        threshold    REAL,
+        status       INTEGER DEFAULT 1,
+        triggered_at TIMESTAMP DEFAULT (datetime('now')),
+        resolved_at  TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS managed_processes (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        pid        INTEGER,
+        name       TEXT,
+        command    TEXT,
+        status     TEXT,
+        pinned     INTEGER DEFAULT 0,
+        started_at TIMESTAMP DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS system_actions (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        process_id   INTEGER REFERENCES managed_processes(id) ON DELETE CASCADE,
+        action_type  TEXT,
+        reason       TEXT,
+        metric_value REAL,
+        created_at   TIMESTAMP DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS alert_engine_state (
+        id         INTEGER PRIMARY KEY DEFAULT 1,
+        state_json TEXT NOT NULL,
+        saved_at   TIMESTAMP NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS verification_tokens (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token      TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT (datetime('now')),
+        expires_at TIMESTAMP NOT NULL
+    );`
+
+	DB.MustExec(schema)
+
 }
