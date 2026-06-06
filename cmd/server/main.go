@@ -12,8 +12,10 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/srvsurya/system-monitor/internal/alerts"
 	"github.com/srvsurya/system-monitor/internal/api"
+	"github.com/srvsurya/system-monitor/internal/cleaner"
 	"github.com/srvsurya/system-monitor/internal/collector"
 	"github.com/srvsurya/system-monitor/internal/db"
+	"github.com/srvsurya/system-monitor/internal/healer"
 	"github.com/srvsurya/system-monitor/internal/logger"
 	"github.com/srvsurya/system-monitor/internal/models"
 	"github.com/srvsurya/system-monitor/internal/notify"
@@ -32,15 +34,16 @@ func main() {
 	defer zaplog.Sync()
 
 	db.Connect()
-
+	h := healer.New(db.DB)
+	cleanerService := cleaner.New(db.DB)
 	mailer := notify.New()
-	alertEngine := alerts.New(db.DB, func(rule models.AlertRule, value float64, emailAlert string) {
+	alertEngine := alerts.New(db.DB, h, func(rule models.AlertRule, value float64, emailAlert string) {
 		if err := mailer.SendAlert(emailAlert, rule.Metric, rule.Operator, rule.Threshold, value); err != nil {
 			log.Println("Sending email failed:", err)
 		}
 	})
 
-	r := api.NewRouter(db.DB, alertEngine, mailer)
+	r := api.NewRouter(db.DB, alertEngine, mailer, cleanerService)
 	// wrap gin inside http.Server so we can call the func Shutdown() on it
 	srv := &http.Server{
 		Addr:    ":8080",

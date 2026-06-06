@@ -9,11 +9,12 @@ import (
 	"github.com/srvsurya/system-monitor/internal/alerts"
 	"github.com/srvsurya/system-monitor/internal/api/handlers"
 	"github.com/srvsurya/system-monitor/internal/api/middleware"
+	"github.com/srvsurya/system-monitor/internal/cleaner"
 	"github.com/srvsurya/system-monitor/internal/notify"
 	"golang.org/x/time/rate"
 )
 
-func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.Engine {
+func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleaner *cleaner.Cleaner) *gin.Engine {
 	r := gin.Default()
 	// CORS
 	r.Use(cors.New(cors.Config{
@@ -65,6 +66,11 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer) *gin.E
 		v1.POST("/processes/register/:id", handlers.RegisterProcess(db))
 		v1.GET("/processes/managed", handlers.GetManagedProcesses(db)) // only managed processes
 		v1.PATCH("/processes/:id", handlers.UpdatePinnedStatus(db))
+		// cleaner routes
+		v1.POST("/cleaner/optimize", handlers.Optimize(db, cleaner))
+		v1.GET("/cleaner/ignore", handlers.GetIgnoreList(db))
+		v1.POST("/cleaner/ignore", handlers.AddToIgnoreList(db))
+		v1.DELETE("/cleaner/ignore/:id", handlers.RemoveFromIgnoreList(db))
 	}
 	return r
 }

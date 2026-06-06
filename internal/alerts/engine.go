@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/srvsurya/system-monitor/internal/healer"
 	"github.com/srvsurya/system-monitor/internal/models"
 )
 
@@ -22,14 +23,16 @@ type Engine struct {
 	rules   []models.AlertRule
 	state   map[int]RuleState
 	onAlert func(rule models.AlertRule, value float64, emailAlert string)
+	healer  *healer.Healer
 }
 
 // New creates a new Engine, loads rules from DB, and restores saved state if valid.
-func New(db *sqlx.DB, onAlert func(models.AlertRule, float64, string)) *Engine {
+func New(db *sqlx.DB, h *healer.Healer, onAlert func(models.AlertRule, float64, string)) *Engine {
 	e := &Engine{
 		db:      db,
 		state:   make(map[int]RuleState),
 		onAlert: onAlert,
+		healer:  h,
 	}
 	e.loadRules()
 	e.restoreState()
@@ -84,6 +87,12 @@ func (e *Engine) Evaluate(metric models.SystemMetric) {
 		}
 
 		e.state[rule.ID] = state // feed state back to engine on every tick.
+	}
+	if e.healer != nil { // When smart-heal is toggled ON
+		var procs []models.ManagedProcess
+		e.db.Select(&procs, `SELECT * FROM managed_processes WHERE status = 'running`)
+		e.healer.Evaluate(procs)
+
 	}
 }
 

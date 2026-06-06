@@ -71,3 +71,13 @@ type SystemAction struct {
 	MetricValue float64   `db:"metric_value" json:"metric_value"`
 	CreatedAt   time.Time `db:"created_at"   json:"created_at"`
 }
+
+type ProcessBaseline struct {
+	ID           int     `db:"id"             json:"id"`
+	ProcessName  string  `db:"process_name"   json:"process_name"`
+	SampleCount  int     `db:"sample_count"   json:"sample_count"`
+	AvgCPU       float64 `db:"avg_cpu"        json:"avg_cpu"`
+	AvgMemory    float64 `db:"avg_memory"     json:"avg_memory"`
+	LastHealedAt *string `db:"last_healed_at" json:"last_healed_at"`
+	LastUpdated  string  `db:"last_updated"   json:"last_updated"`
+}

@@ -106,6 +106,20 @@ func initSchema() { // migrations moved to initSchema
         token      TEXT UNIQUE NOT NULL,
         created_at TIMESTAMP DEFAULT (datetime('now')),
         expires_at TIMESTAMP NOT NULL
+    );
+        CREATE TABLE IF NOT EXISTS process_baselines (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        process_name   TEXT UNIQUE,
+        sample_count   INTEGER DEFAULT 0,
+        avg_cpu        REAL DEFAULT 0,
+        avg_memory     REAL DEFAULT 0,
+        last_healed_at TIMESTAMP,
+        last_updated   TIMESTAMP DEFAULT (datetime('now'))
+    );
+        CREATE TABLE IF NOT EXISTS cleaner_ignore_list (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        process_name TEXT UNIQUE,
+        added_at     TIMESTAMP DEFAULT (datetime('now'))
     );`
 
 	DB.MustExec(schema)
