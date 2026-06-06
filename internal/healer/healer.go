@@ -50,8 +50,11 @@ func (h *Healer) Evaluate(procs []models.ManagedProcess) {
 
 		// check cooldown
 		if baseline.LastHealedAt != nil {
-			lastHealed, err := time.Parse("2006-01-02 15:04:05", *baseline.LastHealedAt)
-			if err == nil && time.Since(lastHealed) < CooldownMinutes*time.Minute {
+			lastHealed, err := time.Parse(time.RFC3339, *baseline.LastHealedAt)
+			log.Printf("[healer] last healed: %v, since: %v, cooldown: %v, err: %v",
+				lastHealed, time.Now().UTC().Sub(lastHealed), CooldownMinutes*time.Minute, err)
+			if err == nil && time.Now().UTC().Sub(lastHealed) < CooldownMinutes*time.Minute {
+				log.Printf("[healer] %s in cooldown, skipping", p.Name)
 				continue
 			}
 		}
@@ -142,8 +145,8 @@ func (h *Healer) heal(p models.ManagedProcess, reason string) {
 
 	// update cooldown
 	h.db.Exec(`
-        UPDATE process_baselines SET last_healed_at = datetime('now')
-        WHERE process_name = ?`, p.Name)
+        UPDATE process_baselines SET last_healed_at = ?
+        WHERE process_name = ?`, time.Now().UTC().Format(time.RFC3339), p.Name)
 
 	log.Printf("[healer] %s restarted with new pid %d", p.Name, newPID)
 }
