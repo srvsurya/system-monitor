@@ -26,6 +26,7 @@ func New(db *sqlx.DB) *Healer {
 }
 
 func (h *Healer) Evaluate(procs []models.ManagedProcess) {
+	log.Printf("[healer] evaluating %d processes", len(procs))
 	for _, p := range procs {
 		if p.Status != "running" {
 			continue
@@ -123,7 +124,7 @@ func (h *Healer) heal(p models.ManagedProcess, reason string) {
 	}
 
 	// restart — same as RestartProcess handler
-	cmd := exec.Command("./stressor")
+	cmd := exec.Command("./stressor-heal")
 	if err := cmd.Start(); err != nil {
 		log.Printf("[healer] failed to restart %s: %v", p.Name, err)
 		return

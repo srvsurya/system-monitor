@@ -1,11 +1,13 @@
+import {useState, useEffect} from 'react'
 import { useWS } from '../context/WSContext'
 import MetricCard from '../components/MetricCard'
 import Processes from './Processes'
-import { Cpu, HardDrive, Activity, MemoryStick, Settings, LogOut} from 'lucide-react';
+import { Cpu, HardDrive, Activity, MemoryStick, Settings, LogOut, Zap, Shield} from 'lucide-react';
 import HistoryChart from '../components/HistoricalCharts';
 import ActiveAlerts from '../components/AlertSection';
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/axios'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { metrics, connected } = useWS()
@@ -20,6 +22,62 @@ export default function Dashboard() {
       navigate('/login')
     }
   }
+  useEffect(() => {
+  const fetchHealState = async () => {
+      try {
+          const res = await api.get('/api/v1/cleaner/settings')
+          setHealEnabled(res.data.smart_heal_enabled === 1)
+      } catch (err) {
+          console.error('Failed to fetch heal state')
+      }
+  }
+  fetchHealState()
+  }, [])
+
+  const [optimizing, setOptimizing] = useState(false)
+  const [toast, setToast] = useState(null)
+  const [healEnabled, setHealEnabled] = useState(false)
+  const [healLoading, setHealLoading] = useState(false)
+
+
+const showToast = (message, type = 'success') => {
+  setToast({ message, type })
+  setTimeout(() => setToast(null), 4000)
+}
+
+const handleOptimize = async () => {
+  setOptimizing(true)
+  try {
+    const res = await api.post('/api/v1/cleaner/optimize')
+    const { killed, skipped, errors } = res.data
+    if (killed.length === 0 && errors?.length > 0) {
+      showToast('Optimization failed', 'error')
+    } else if (killed.length === 0) {
+      showToast(`System is clean — nothing to optimize (${skipped} processes checked)`)
+    } else {
+      showToast(`Killed ${killed.length} process${killed.length > 1 ? 'es' : ''}, ${skipped} skipped`)
+    }
+  } catch (err) {
+    showToast('Optimization failed', 'error')
+  } finally {
+    setOptimizing(false)
+  }
+}
+
+const handleHealToggle = async () => {
+  setHealLoading(true)
+  try {
+    const next = !healEnabled
+    await api.post('/api/v1/healer/toggle', { enabled: next })
+    setHealEnabled(next)
+    showToast(`Smart Heal ${next ? 'enabled' : 'disabled'}`)
+  } catch (err) {
+    showToast('Failed to update Smart Heal', 'error')
+  } finally {
+    setHealLoading(false)
+  }
+}
+
 
   return (
     <div className="min-h-screen bg-white p-8">
@@ -52,6 +110,14 @@ export default function Dashboard() {
             </span>
           </div>
         </div>
+        
+        {toast && (
+          <div className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${
+            toast.type === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'
+          }`}>
+            {toast.message}
+          </div>
+        )}
 
         {!metrics ? (
           <p className="text-gray-500">Waiting for metrics...</p>
@@ -63,6 +129,34 @@ export default function Dashboard() {
             <MetricCard title="Network In" value={(metrics.net_download / 1024).toFixed(1)} unit="KB/s" icon={<Activity className="w-6 h-6" />}/>
           </div>
         )}
+
+        <div className="flex items-center gap-4 mt-6">
+          <button
+            onClick={handleOptimize}
+            disabled={optimizing}
+            className="flex items-center gap-2 bg-black text-white text-xs px-4 py-2 rounded-xl hover:scale-105 transition-transform duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Zap className="w-4 h-4" />
+            {optimizing ? 'Optimizing...' : 'Optimize'}
+          </button>
+
+          <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+            <Shield className="w-4 h-4 text-gray-500" />
+            <span className="text-xs text-gray-600">Smart Heal</span>
+            <button
+              onClick={handleHealToggle}
+              disabled={healLoading}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                healEnabled ? 'bg-black' : 'bg-gray-300'
+              } ${healLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
+                healEnabled ? 'translate-x-5' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
+        </div>
+
         
       <div className="flex flex-col lg:flex-row gap-6 mt-6">
         <div className="flex-2 min-w-0">

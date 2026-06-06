@@ -90,8 +90,14 @@ func (e *Engine) Evaluate(metric models.SystemMetric) {
 	}
 	if e.healer != nil { // When smart-heal is toggled ON
 		var procs []models.ManagedProcess
-		e.db.Select(&procs, `SELECT * FROM managed_processes WHERE status = 'running`)
-		e.healer.Evaluate(procs)
+		var enabled int
+		err := e.db.Get(&enabled, `SELECT smart_heal_enabled FROM cleaner_settings WHERE id = 1`)
+		log.Printf("[engine] smart_heal_enabled = %d, err = %v", enabled, err)
+		if enabled == 1 {
+			e.db.Select(&procs, `SELECT * FROM managed_processes WHERE status = 'running`)
+			log.Printf("[engine] passing %d procs to healer", len(procs))
+			e.healer.Evaluate(procs)
+		}
 
 	}
 }

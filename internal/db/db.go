@@ -120,7 +120,16 @@ func initSchema() { // migrations moved to initSchema
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
         process_name TEXT UNIQUE,
         added_at     TIMESTAMP DEFAULT (datetime('now'))
-    );`
+    );
+        CREATE TABLE IF NOT EXISTS cleaner_settings (
+        id                  INTEGER PRIMARY KEY DEFAULT 1,
+        cpu_threshold       REAL DEFAULT 80.0,
+        mem_threshold_mb    REAL DEFAULT 500.0,
+        duplicate_threshold INTEGER DEFAULT 3,
+        smart_heal_enabled  INTEGER DEFAULT 0,
+        updated_at          TIMESTAMP DEFAULT (datetime('now'))
+    );
+        INSERT OR IGNORE INTO cleaner_settings (id) VALUES (1);`
 
 	DB.MustExec(schema)
 

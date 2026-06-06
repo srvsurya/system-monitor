@@ -19,7 +19,7 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 	// CORS
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "PUT", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}))
@@ -71,6 +71,10 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 		v1.GET("/cleaner/ignore", handlers.GetIgnoreList(db))
 		v1.POST("/cleaner/ignore", handlers.AddToIgnoreList(db))
 		v1.DELETE("/cleaner/ignore/:id", handlers.RemoveFromIgnoreList(db))
+		v1.GET("/cleaner/settings", handlers.GetCleanerSettings(db))
+		v1.PUT("/cleaner/settings", handlers.UpdateCleanerSettings(db))
+		// smart heal
+		v1.POST("/healer/toggle", handlers.ToggleSmartHeal(db))
 	}
 	return r
 }

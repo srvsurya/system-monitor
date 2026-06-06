@@ -9,10 +9,25 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-const (
-	CPUThreshold = 80.0  // %
-	MemThreshold = 500.0 // MB
-)
+type CleanerSettings struct {
+	CPUThreshold       float64 `db:"cpu_threshold"`
+	MemThresholdMB     float64 `db:"mem_threshold_mb"`
+	DuplicateThreshold int     `db:"duplicate_threshold"`
+}
+
+func (c *Cleaner) loadSettings() CleanerSettings {
+	var s CleanerSettings
+	err := c.db.Get(&s, `SELECT cpu_threshold, mem_threshold_mb, duplicate_threshold FROM cleaner_settings WHERE id = 1`)
+	if err != nil {
+		// fallback to safe defaults if table read fails
+		return CleanerSettings{
+			CPUThreshold:       80.0,
+			MemThresholdMB:     500.0,
+			DuplicateThreshold: 3,
+		}
+	}
+	return s
+}
 
 // processes that should never be touched
 var protectedNames = map[string]bool{
@@ -49,7 +64,7 @@ func (c *Cleaner) Optimize() OptimizeResult {
 		Killed: []KilledProcess{},
 		Errors: []string{},
 	}
-
+	settings := c.loadSettings()
 	// load ignore list from DB
 	var ignoreList []string
 	c.db.Select(&ignoreList, `SELECT process_name FROM cleaner_ignore_list`)
@@ -91,8 +106,8 @@ func (c *Cleaner) Optimize() OptimizeResult {
 			memMB = float64(memInfo.RSS) / 1024 / 1024
 		}
 
-		cpuHog := cpu > CPUThreshold
-		memHog := memMB > MemThreshold
+		cpuHog := cpu > settings.CPUThreshold
+		memHog := memMB > settings.MemThresholdMB
 		isDuplicate := nameCounts[name] > 3 && !isSystemProcess(name)
 
 		reason := ""
