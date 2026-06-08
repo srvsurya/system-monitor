@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "../api/axios"
 import AlertHistorySection from "../components/AlertHistoryInsights" 
+import ResourceConsumers from "../components/ResourceConsumers"
 
 export default function Insights() {
   const navigate = useNavigate()
@@ -40,7 +41,7 @@ export default function Insights() {
 
       setMetrics(metricsRes.data || [])
       setAlertHistory(alertsRes.data || [])
-      setProcesses(processesRes.data || [])
+      setProcesses(Object.values(processesRes.data || {})) // listProcesses stores data in an object format
 
       // Build ruleMap: { rule_id → { metric, threshold } }
       const map = {}
@@ -379,8 +380,12 @@ export default function Insights() {
       />
   
 
-      {/* Sections will go here */}
-      <p className="text-gray-400">Sections coming next...</p>
+      <ResourceConsumers
+        processes={processes}
+        metrics={metrics}
+        filterByTimeRange={filterByTimeRange}
+        timeRange={timeRange}
+      />
     </div>
   </div>
   )

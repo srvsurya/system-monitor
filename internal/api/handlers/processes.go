@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"runtime"
+
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -40,11 +42,17 @@ func ListProcesses(db *sqlx.DB) gin.HandlerFunc { // list out processes (all)
 				continue
 			}
 			cpu, err := p.CPUPercent()
+			if err != nil {
+				continue
+			}
 			memory, err := p.MemoryPercent()
+			if err != nil {
+				continue
+			}
 			list = append(list, ProcessInfo{
 				PID:    p.Pid,
 				Name:   name,
-				CPU:    cpu,
+				CPU:    cpu / float64(runtime.NumCPU()),
 				Memory: memory,
 			})
 		}
@@ -81,6 +89,8 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 			log.Printf("Failed to stop process: %v", err)
 			return
 		}
+		process.Wait()
+
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
 		db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = ?`, id)
 		db.QueryRow(`SELECT pinned FROM managed_processes WHERE id = ?`, id).Scan(&pinned)
@@ -278,7 +288,7 @@ func GetManagedProcesses(db *sqlx.DB) gin.HandlerFunc {
 
 			info = append(info, managed{
 				ManagedProcess: p,
-				CPU:            cpu / 12, // display per core
+				CPU:            cpu / float64(runtime.NumCPU()), // display per core
 				Memory:         mem,
 			})
 		}

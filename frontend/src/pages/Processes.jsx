@@ -67,7 +67,7 @@ function RegisterModal({ onClose, onRegistered }) {
               <div key={p.pid} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-100">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{p.name}</p>
-                  <p className="text-xs text-gray-400">PID: {p.pid} • CPU: {p.cpu_percentage?.toFixed(1)}% • Mem: {p.memory_percentage?.toFixed(1)}%</p>
+                  <p className="text-xs text-gray-400">PID: {p.pid} • CPU: {p.cpu_percentage?.toFixed(2)}% • Mem: {p.memory_percentage?.toFixed(2)}%</p>
                 </div>
                 <button
                   onClick={() => handleRegister(p.pid)}
@@ -177,7 +177,7 @@ export default function Processes() {
                         {process.pinned && <Pin className="w-3 h-3 text-blue-500" />}
                       </div>
                       <p className="text-xs text-gray-500">
-                        PID: {process.pid} • CPU: {process.cpu_percentage?.toFixed(1)}% • Memory: {process.memory_percentage?.toFixed(1)}%
+                        PID: {process.pid} • CPU: {process.cpu_percentage?.toFixed(2)}% • Memory: {process.memory_percentage?.toFixed(2)}%
                       </p>
                     </div>
                   </div>

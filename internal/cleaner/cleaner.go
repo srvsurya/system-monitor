@@ -171,7 +171,7 @@ func isProtected(p *process.Process, name string, ignoreList []string) bool {
 }
 
 func isSystemProcess(name string) bool {
-	systemPrefixes := []string{"kworker", "kthread", "rcu", "migration", "watchdog"}
+	systemPrefixes := []string{"kworker", "kthread", "rcu", "migration", "watchdog", "gnome", "gvfs", "ibus", "dbus", "xdg", "gdm", "systemd"}
 	for _, prefix := range systemPrefixes {
 		if strings.HasPrefix(strings.ToLower(name), prefix) {
 			return true
