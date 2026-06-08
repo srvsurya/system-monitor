@@ -155,6 +155,12 @@ const handleHealToggle = async () => {
               }`} />
             </button>
           </div>
+          <div>
+            <button
+            onClick={() => navigate("/insights")}>
+              Insights
+            </button>
+          </div>
         </div>
 
         

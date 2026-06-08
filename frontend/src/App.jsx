@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Alerts from './pages/Alerts'
 import Processes from './pages/Processes'
 import Settings from './pages/Settings'
+import Insights from './pages/Insights'
 
 function ProtectedRoute({ children }) {
   const { token } = useAuth()
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
       <Route path="/processes" element={<ProtectedRoute><Processes /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
     </Routes>
   )
 }
