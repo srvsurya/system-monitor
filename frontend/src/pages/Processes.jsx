@@ -144,7 +144,7 @@ export default function Processes() {
           <h1 className="text-xl font-bold text-gray-900">Process Control</h1>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg hover:cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Register Process
@@ -182,10 +182,10 @@ export default function Processes() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col lg:flex-row gap-2">
+                  <div className="flex flex-col gap-2">
                     <button
                       onClick={() => handlePin(process.id)}
-                      className={`p-2 rounded-md transition-colors ${
+                      className={`p-2 rounded-md transition-colors hover:cursor-pointer ${
                         process.pinned
                           ? 'bg-blue-100 text-blue-600'
                           : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
@@ -197,14 +197,14 @@ export default function Processes() {
                     <button
                       onClick={() => handleStop(process.id)}
                       disabled={process.status === 'stopped'}
-                      className="p-2 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white rounded-md transition-colors"
+                      className="p-2 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white rounded-md transition-colors hover:cursor-pointer"
                       title="Stop"
                     >
                       <Square className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleRestart(process.id)}
-                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors hover:cursor-pointer"
                       title="Restart"
                     >
                       <RotateCw className="w-4 h-4" />

@@ -130,49 +130,48 @@ const handleHealToggle = async () => {
           </div>
         )}
 
-        <div className="flex items-center gap-4 mt-6">
-          <button
-            onClick={handleOptimize}
-            disabled={optimizing}
-            className="flex items-center gap-2 bg-black text-white text-xs px-4 py-2 rounded-xl hover:scale-105 transition-transform duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Zap className="w-4 h-4" />
-            {optimizing ? 'Optimizing...' : 'Optimize'}
-          </button>
-
-          <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-            <Shield className="w-4 h-4 text-gray-500" />
-            <span className="text-xs text-gray-600">Smart Heal</span>
-            <button
-              onClick={handleHealToggle}
-              disabled={healLoading}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                healEnabled ? 'bg-black' : 'bg-gray-300'
-              } ${healLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
-                healEnabled ? 'translate-x-5' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-          <div>
-            <button
-            onClick={() => navigate("/insights")}>
-              Insights
-            </button>
-          </div>
-        </div>
 
         
-      <div className="flex flex-col lg:flex-row gap-6 mt-6">
-        <div className="flex-2 min-w-0">
-          <HistoryChart />
-        </div>
+      <div className="flex flex-col lg:flex-row gap-6 mt-4">
+        
         <div className="flex-1 min-w-0">
-          <Processes />
+          <div>
+            <HistoryChart />
+            <ActiveAlerts/>
+          </div>
+        </div>
+        <div className="flex flex-col lg:w-100 shrink-0 overflow-hidden">
+          <div className="flex justify-between gap-4 mt-6">
+            <button
+              onClick={handleOptimize}
+              disabled={optimizing}
+              className="flex items-center ml-2 gap-2 bg-blue-600 text-white text-xs px-4 py-2 rounded-xl hover:scale-105 transition-transform duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Zap className="w-4 h-4" />
+              {optimizing ? 'Optimizing...' : 'Optimize'}
+            </button>
+
+            <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+              <Shield className="w-4 h-4 text-gray-500" />
+              <span className="text-xs text-gray-600">Smart Heal</span>
+              <button
+                onClick={handleHealToggle}
+                disabled={healLoading}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                  healEnabled ? 'bg-black' : 'bg-gray-300'
+                } ${healLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
+                  healEnabled ? 'translate-x-5' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <Processes />
+          </div>
         </div>
       </div>
-      <ActiveAlerts/>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import api from '../api/axios'
+import { useNavigate } from 'react-router-dom'
 
 const pad = (n) => String(n).padStart(2, '0')
 
@@ -9,6 +10,7 @@ const formatLocal = (date) => {
 }
 
 export default function HistoryChart({ className = '' }) {
+  const navigate = useNavigate()
   const [data, setData] = useState([])
   const [active, setActive] = useState('cpu')
   const [range, setRange] = useState(30)
@@ -64,6 +66,15 @@ export default function HistoryChart({ className = '' }) {
     <div className={`bg-white rounded-xl border border-gray-200 p-6 mt-6 ${className}`}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <h2 className="font-semibold text-gray-900">History</h2>
+        <div>
+            <button
+              onClick={() => navigate("/insights")}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-violet-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:from-purple-600 hover:to-violet-700 hover:scale-105 transition-all duration-200 cursor-pointer shadow-sm"
+            >
+              <span>✦</span>
+              Insights
+            </button>
+          </div>
         <div className="flex flex-wrap gap-2">
           {ranges.map(r => (
             <button
