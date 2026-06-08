@@ -315,3 +315,16 @@ func UpdatePinnedStatus(db *sqlx.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "Pinned status updated", "status": pinned})
 	}
 }
+
+func RemoveFromManaged(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			log.Printf("Conversion error id -> RemoveFromManaged: %v", err)
+			return
+		}
+		db.Exec(`DELETE FROM managed_processes WHERE id = ?`, id)
+		c.JSON(http.StatusOK, gin.H{"message": "Removed from managed"})
+	}
+}

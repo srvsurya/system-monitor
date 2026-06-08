@@ -86,6 +86,13 @@ function RegisterModal({ onClose, onRegistered }) {
 }
 
 export default function Processes() {
+  const [toast, setToast] = useState(null)
+
+  const showToast = (msg, type = 'info') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
   const [processes, setProcesses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -133,6 +140,16 @@ export default function Processes() {
     console.error('Pin failed:', err)
   }
 }
+const handleRemove = (process) => {
+  if (process.pinned) {
+    showToast("You must remove Pin in order to remove this process from the list", "error")
+    return
+  }
+  api.delete(`/api/v1/processes/${process.id}/remove`)
+    .then(() => fetchProcesses())
+    .catch(() => showToast("Failed to remove process", "error"))
+}
+
 
   if (loading) return <div className="min-h-screen bg-gray-50 p-8 text-gray-400">Loading...</div>
   if (error) return <div className="min-h-screen bg-gray-50 p-8 text-red-400">{error}</div>
@@ -159,7 +176,7 @@ export default function Processes() {
                   processes.map(process => (
                 <div
                   key={process.id}
-                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                  className={`relative flex items-center justify-between p-3 rounded-lg transition-colors ${
                     process.status === 'stopped'
                       ? 'bg-gray-100 opacity-60'
                       : 'bg-gray-50 hover:bg-gray-100'
@@ -181,6 +198,13 @@ export default function Processes() {
                       </p>
                     </div>
                   </div>
+                   <button
+                        onClick={() => handleRemove(process)}
+                        className="absolute -top-2 -left-2 w-4 h-4 bg-gray-200 hover:bg-red-100 hover:text-red-500 text-gray-400 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer"
+                        title="Remove from managed"
+                      >
+                        ×
+                    </button>
 
                   <div className="flex flex-col gap-2">
                     <button
@@ -223,6 +247,14 @@ export default function Processes() {
           onRegistered={fetchProcesses}
         />
       )}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg text-white text-sm shadow-lg z-50 ${
+          toast.type === 'error' ? 'bg-gray-500' : 'bg-green-500'
+        }`}>
+          {toast.msg}
+        </div>
+      )}
     </div>
+    
   )
 }

@@ -69,7 +69,7 @@ export default function HistoryChart({ className = '' }) {
         <div>
             <button
               onClick={() => navigate("/insights")}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-violet-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:from-purple-600 hover:to-violet-700 hover:scale-105 transition-all duration-200 cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 bg-linear-to-r from-purple-500 to-violet-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:from-purple-600 hover:to-violet-700 hover:scale-105 transition-all duration-200 cursor-pointer shadow-sm"
             >
               <span>✦</span>
               Insights
