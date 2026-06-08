@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "../api/axios"
+import AlertHistorySection from "../components/AlertHistoryInsights" 
 
 export default function Insights() {
   const navigate = useNavigate()
@@ -224,7 +225,7 @@ export default function Insights() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-500 dark:text-gray-400">Loading insights...</p>
+      <p className="text-gray-500">Loading insights...</p>
     </div>
   )
 
@@ -241,7 +242,7 @@ export default function Insights() {
         <div className="flex flex-col items-center justify-between mb-6">
           <div className="flex flex-col items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold text-gray-900">Historical Insights</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 mt-1">
               Analyze system behavior and resource consumption patterns
             </p>
           </div>
@@ -250,7 +251,7 @@ export default function Insights() {
         <div className="flex items-center gap-6 justify-between mb-4">
             <div className="flex items-center gap-2">
             <span className="text-green-500 text-lg">✦</span>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white">System Health Summary</h2>
+            <h2 className="text-base font-semibold text-gray-900">System Health Summary</h2>
             </div>
             <button
             onClick={generateInsights}
@@ -275,7 +276,7 @@ export default function Insights() {
         {!insights && !generating && (
             <div className="flex flex-col items-center justify-center py-10 text-center">
             <span className="text-4xl mb-3">🔍</span>
-            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+            <p className="text-sm text-gray-500 max-w-sm">
                 Click <span className="font-medium text-purple-500">Generate System Insights</span> to run
                 an analysis of your system's health based on metrics and alert history.
             </p>
@@ -313,19 +314,19 @@ export default function Insights() {
                 (totalAlerts > 5 ? 2 : totalAlerts > 0 ? 1 : 0)
 
                 const badge = stressScore === 0
-                ? { label: "Healthy",  color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" }
+                ? { label: "Healthy",  color: "bg-green-100 text-green-700" }
                 : stressScore <= 2
-                ? { label: "Stable",   color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" }
+                ? { label: "Stable",   color: "bg-blue-100 text-blue-700" }
                 : stressScore <= 4
-                ? { label: "Moderate", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" }
-                : { label: "Stressed", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
+                ? { label: "Moderate", color: "bg-yellow-100 text-yellow-700" }
+                : { label: "Stressed", color: "bg-red-100 text-red-700" }
 
                 return (
                 <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badge.color}`}>
                     {badge.label}
                     </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                    <span className="text-xs text-gray-400">
                     Based on {timeRange === "all" ? "all recorded data" : `the last ${timeRange}`}
                     </span>
                 </div>
@@ -333,7 +334,7 @@ export default function Insights() {
             })()}
 
             {/* Insight sentences */}
-            <div className="border-l-2 border-purple-300 dark:border-purple-700 pl-4 space-y-2">
+            <div className="border-l-2 border-purple-300 pl-4 space-y-2">
                 {insights.map((sentence, i) => (
                 <p key={i} className="text-sm text-gray-700 leading-relaxed">
                     {sentence}
@@ -342,7 +343,7 @@ export default function Insights() {
             </div>
 
             {/* Timestamp */}
-            <p className="text-xs text-gray-400 dark:text-gray-500 pt-2">
+            <p className="text-xs text-gray-400 pt-2">
                 Generated at {new Date().toLocaleTimeString()}
             </p>
             </div>
@@ -352,7 +353,7 @@ export default function Insights() {
         {/* Time range selector — shared across Alert History and System Trend */}
         <div className="flex items-center gap-2 mb-4">
             <span className="text-xs text-gray-500">Time range:</span>
-        {["24h", "7d", "30d", "all"].map(range => (
+          {["24h", "7d", "30d", "all"].map(range => (
             <button
             key={range}
             onClick={() => {
@@ -362,21 +363,25 @@ export default function Insights() {
             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                 timeRange === range
                 ? "bg-purple-600 text-white border-purple-600"
-                : "text-gray-500 dark:text-gray-400 border-gray-300 hover:border-purple-400 hover:cursor-pointer"
+                : "text-gray-500 border-gray-300 hover:border-purple-400 hover:cursor-pointer"
             }`}
             >
             {range}
             </button>
         ))}
         </div>
+      </div>
+        <AlertHistorySection
+          alertHistory={alertHistory}
+          ruleMap={ruleMap}
+          timeRange={timeRange}
+          filterByTimeRange={filterByTimeRange}
+      />
+  
 
-        {/* Placeholder for next sections */}
-        <p className="text-gray-400">Alert History + Resource Consumers coming next...</p>
-            </div>
-
-                {/* Sections will go here */}
-                <p className="text-gray-400">Sections coming next...</p>
-            </div>
-        </div>
+      {/* Sections will go here */}
+      <p className="text-gray-400">Sections coming next...</p>
+    </div>
+  </div>
   )
 }

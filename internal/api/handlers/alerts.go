@@ -39,9 +39,18 @@ func GetActiveAlerts(db *sqlx.DB) gin.HandlerFunc {
 // GetAlertHistory returns all alerts regardless of status
 func GetAlertHistory(db *sqlx.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var allAlerts []models.Alert
+		type AlertWithMetric struct {
+			models.Alert
+			Metric string `db:"metric" json:"metric"`
+		}
+		var allAlerts []AlertWithMetric
+
 		err := db.Select(&allAlerts, `
-			SELECT * FROM alerts ORDER BY triggered_at DESC
+			SELECT a.id, a.rule_id, a.value, a.threshold, a.status, a.triggered_at, a.resolved_at,
+                   ar.metric
+            FROM alerts a
+            LEFT JOIN alert_rules ar ON a.rule_id = ar.id
+            ORDER BY a.triggered_at DESC
 		`)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch alert history"})
