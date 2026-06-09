@@ -231,28 +231,28 @@ export default function Insights() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 dark:bg-gray-900">
       {/* Header */}
       <div className="max-w-5xl mx-auto">
         <button
           onClick={() => navigate("/")}
-          className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1 hover:cursor-pointer"
+          className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1 hover:cursor-pointer dark:text-gray-400 dark:hover:text-gray-200"
         >
           ← Back to Dashboard
         </button>
         <div className="flex flex-col items-center justify-between mb-6">
           <div className="flex flex-col items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-gray-900">Historical Insights</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-200">Historical Insights</h1>
+            <p className="text-sm text-gray-500 mt-1 dark:text-gray-300">
               Analyze system behavior and resource consumption patterns
             </p>
           </div>
           {/* Health Summary Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 dark:bg-gray-700">
         <div className="flex items-center gap-6 justify-between mb-4">
             <div className="flex items-center gap-2">
             <span className="text-green-500 text-lg">✦</span>
-            <h2 className="text-base font-semibold text-gray-900">System Health Summary</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-200">System Health Summary</h2>
             </div>
             <button
             onClick={generateInsights}
@@ -277,7 +277,7 @@ export default function Insights() {
         {!insights && !generating && (
             <div className="flex flex-col items-center justify-center py-10 text-center">
             <span className="text-4xl mb-3">🔍</span>
-            <p className="text-sm text-gray-500 max-w-sm">
+            <p className="text-sm text-gray-500 max-w-sm dark:text-gray-400">
                 Click <span className="font-medium text-purple-500">Generate System Insights</span> to run
                 an analysis of your system's health based on metrics and alert history.
             </p>
@@ -337,7 +337,7 @@ export default function Insights() {
             {/* Insight sentences */}
             <div className="border-l-2 border-purple-300 pl-4 space-y-2">
                 {insights.map((sentence, i) => (
-                <p key={i} className="text-sm text-gray-700 leading-relaxed">
+                <p key={i} className="text-sm text-gray-700 leading-relaxed dark:text-gray-300">
                     {sentence}
                 </p>
                 ))}
@@ -353,7 +353,7 @@ export default function Insights() {
 
         {/* Time range selector — shared across Alert History and System Trend */}
         <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-gray-500">Time range:</span>
+            <span className="text-xs text-gray-500 dark:text-gray-300">Time range:</span>
           {["24h", "7d", "30d", "all"].map(range => (
             <button
             key={range}
@@ -364,7 +364,7 @@ export default function Insights() {
             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                 timeRange === range
                 ? "bg-purple-600 text-white border-purple-600"
-                : "text-gray-500 border-gray-300 hover:border-purple-400 hover:cursor-pointer"
+                : "text-gray-500 border-gray-300 dark:text-gray-300 hover:border-purple-400 hover:cursor-pointer"
             }`}
             >
             {range}

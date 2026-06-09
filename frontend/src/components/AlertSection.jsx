@@ -31,8 +31,8 @@ export default function ActiveAlerts() {
 }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6">
-      <h2 className="font-semibold text-gray-900 mb-4">System Alerts</h2>
+    <div className="bg-white rounded-xl border border-gray-200 dark:bg-gray-700 p-6 mt-6">
+      <h2 className="font-semibold text-gray-900 mb-4 dark:text-gray-200">System Alerts</h2>
       {alerts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
           <AlertCircle className="w-8 h-8 mb-2" strokeWidth={1.5} />

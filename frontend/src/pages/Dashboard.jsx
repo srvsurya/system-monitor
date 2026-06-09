@@ -80,28 +80,28 @@ const handleHealToggle = async () => {
 
 
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 p-8">
       <div className="max-w-6xl mx-auto">
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex-col">
-            <h1 className="text-black text-2xl font-bold">System Monitor</h1>
-            <p className="text-gray-600">Real-time system metrics and process management</p>
+            <h1 className="text-black text-2xl font-bold dark:text-gray-200">System Monitor</h1>
+            <p className="text-gray-600 dark:text-gray-400">Real-time system metrics and process management</p>
           </div>
           <div className="flex flex-col gap-5">
             <div className="flex gap-2">
               <button onClick={() => navigate("/settings")} 
-              className="bg-white shadow rounded-xl border border-black text-gray-600 text-xs p-2 hover:scale-110 transition-transform duration-200 cursor-pointer">
+              className="bg-white shadow rounded-xl border border-black text-gray-600 text-xs p-2 hover:scale-110 transition-transform duration-200 cursor-pointer dark:bg-gray-600">
                 <div className="flex items-center gap-1">
-                  <Settings className="w-4 h-4" />
-                  <span>Settings</span>
+                  <Settings className="w-4 h-4 dark:text-white" />
+                  <span className="dark:text-white">Settings</span>
                 </div>
               </button>
               <button onClick={handleLogout}
-              className="bg-white shadow rounded-xl border border-black text-gray-600 text-xs p-2 hover:scale-110 transition-transform duration-200 cursor-pointer">
+              className="bg-white shadow rounded-xl border border-black text-gray-600 text-xs p-2 hover:scale-110 transition-transform duration-200 cursor-pointer dark:bg-gray-600">
                 <div className="flex items-center gap-1">
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
+                  <LogOut className="w-4 h-4 dark:text-white" />
+                  <span className="dark:text-white">Logout</span>
                 </div>
               </button>
             </div>
@@ -151,9 +151,9 @@ const handleHealToggle = async () => {
               {optimizing ? 'Optimizing...' : 'Optimize'}
             </button>
 
-            <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-              <Shield className="w-4 h-4 text-gray-500" />
-              <span className="text-xs text-gray-600">Smart Heal</span>
+            <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm dark:bg-gray-500">
+              <Shield className="w-4 h-4 text-gray-500 dark:text-white" />
+              <span className="text-xs text-gray-600 dark:text-white">Smart Heal</span>
               <button
                 onClick={handleHealToggle}
                 disabled={healLoading}

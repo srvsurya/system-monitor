@@ -63,9 +63,9 @@ export default function HistoryChart({ className = '' }) {
   const current = tabs.find(t => t.key === active)
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 p-6 mt-6 ${className}`}>
+    <div className={`bg-white rounded-xl border border-gray-200 p-6 mt-6 dark:bg-gray-700 ${className}`}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <h2 className="font-semibold text-gray-900">History</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-gray-200">History</h2>
         <div>
             <button
               onClick={() => navigate("/insights")}
@@ -80,7 +80,7 @@ export default function HistoryChart({ className = '' }) {
             <button
               key={r.minutes}
               onClick={() => setRange(r.minutes)}
-              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors hover:cursor-pointer ${
                 range === r.minutes
                   ? 'bg-gray-900 text-white'
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
@@ -95,7 +95,7 @@ export default function HistoryChart({ className = '' }) {
             <button
               key={t.key}
               onClick={() => setActive(t.key)}
-              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors hover:cursor-pointer ${
                 active === t.key
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'

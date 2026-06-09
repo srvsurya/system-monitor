@@ -7,10 +7,10 @@ export default function MetricCard({ title,value,unit,icon}) {
 
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 dark:bg-gray-700">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-sm text-gray-500">{title}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-300">{title}</p>
         </div>
         <div className={getColor(value)}>
           {icon}
@@ -18,7 +18,7 @@ export default function MetricCard({ title,value,unit,icon}) {
       </div>
       <div className="mb-3">
         <div className="flex justify-between text-sm mb-1">
-          <span className="text-gray-600">Usage</span>
+          <span className="text-gray-600 dark:text-gray-300">Usage</span>
           <span className={getColor(value)}>{value}{unit}</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">

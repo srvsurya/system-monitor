@@ -75,13 +75,13 @@ export default function AlertHistorySection({ alertHistory, ruleMap, timeRange, 
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 dark:bg-gray-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-yellow-500">⚠</span>
-          <h2 className="text-base font-semibold text-gray-900">Alert History</h2>
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-200">Alert History</h2>
+          <span className="text-xs text-gray-400 bg-gray-100 dark:text-gray-900 dark:bg-gray-400 px-2 py-0.5 rounded-full">
             {sorted.length} alert{sorted.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -90,7 +90,7 @@ export default function AlertHistorySection({ alertHistory, ruleMap, timeRange, 
         <select
           value={metricFilter}
           onChange={e => setMetricFilter(e.target.value)}
-          className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500"
+          className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-400 text-gray-90000 focus:outline-none focus:ring-1 focus:ring-purple-500 hover:cursor-pointer"
         >
           {availableMetrics.map(m => (
             <option key={m} value={m}>
@@ -104,7 +104,7 @@ export default function AlertHistorySection({ alertHistory, ruleMap, timeRange, 
       {sorted.length === 0 && (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <span className="text-3xl mb-2">✅</span>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-200">
             No alerts were triggered in this time range.
           </p>
         </div>
@@ -118,32 +118,32 @@ export default function AlertHistorySection({ alertHistory, ruleMap, timeRange, 
               <tr className="border-b border-gray-100">
                 <th
                   onClick={() => handleSort("metric")}
-                  className="text-left text-xs font-medium text-gray-500 pb-2 cursor-pointer hover:text-purple-500 select-none"
+                  className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 pb-2 cursor-pointer hover:text-purple-500 select-none"
                 >
                   Metric <SortIcon col="metric" />
                 </th>
                 <th
                   onClick={() => handleSort("value")}
-                  className="text-left text-xs font-medium text-gray-500 pb-2 cursor-pointer hover:text-purple-500 select-none"
+                  className="text-left text-xs font-medium text-gray-500 dark:text-gray-300  pb-2 cursor-pointer hover:text-purple-500 select-none"
                 >
                   Value <SortIcon col="value" />
                 </th>
-                <th className="text-left text-xs font-medium text-gray-500 pb-2">
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-300  pb-2">
                   Threshold
                 </th>
-                <th className="text-left text-xs font-medium text-gray-500 pb-2">
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-300  pb-2">
                   Severity
                 </th>
-                <th className="text-left text-xs font-medium text-gray-500 pb-2">
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-300  pb-2">
                   Status
                 </th>
                 <th
                   onClick={() => handleSort("triggered_at")}
-                  className="text-left text-xs font-medium text-gray-500 pb-2 cursor-pointer hover:text-purple-500 select-none"
+                  className="text-left text-xs font-medium text-gray-500 dark:text-gray-300  pb-2 cursor-pointer hover:text-purple-500 select-none"
                 >
                   Triggered <SortIcon col="triggered_at" />
                 </th>
-                <th className="text-left text-xs font-medium text-gray-500 pb-2">
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-300  pb-2">
                   Resolved
                 </th>
               </tr>
@@ -157,14 +157,14 @@ export default function AlertHistorySection({ alertHistory, ruleMap, timeRange, 
                 const unit = isPercent ? "%" : " KB/s"
 
                 return (
-                  <tr key={alert.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-3 font-medium text-gray-800">
+                  <tr key={alert.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <td className="py-3 font-medium text-gray-800 dark:text-gray-300">
                       {metricName}
                     </td>
-                    <td className="py-3 text-gray-700">
+                    <td className="py-3 text-gray-700 dark:text-gray-300">
                       {alert.value.toFixed(1)}{unit}
                     </td>
-                    <td className="py-3 text-gray-500">
+                    <td className="py-3 text-gray-500 dark:text-gray-300">
                       {alert.threshold.toFixed(1)}{unit}
                     </td>
                     <td className="py-3">
@@ -181,10 +181,10 @@ export default function AlertHistorySection({ alertHistory, ruleMap, timeRange, 
                         {alert.status ? "Active" : "Resolved"}
                       </span>
                     </td>
-                    <td className="py-3 text-gray-500 text-xs">
+                    <td className="py-3 text-gray-500 text-xs dark:text-gray-300">
                       {new Date(alert.triggered_at).toLocaleString()}
                     </td>
-                    <td className="py-3 text-gray-500 text-xs">
+                    <td className="py-3 text-gray-500 dark:text-gray-300 text-xs">
                       {alert.resolved_at
                         ? new Date(alert.resolved_at).toLocaleString()
                         : <span className="text-gray-300">—</span>

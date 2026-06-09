@@ -32,27 +32,27 @@ const topProcesses = useMemo(() => {
   // --- System trend data from /stats/history ---
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+    <div className="bg-white rounded-xl border border-gray-200 dark:bg-gray-700 p-6 mb-6">
       {/* Current Top Consumers */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <span className="text-orange-500">⚡</span>
-            <h2 className="text-base font-semibold text-gray-900">Current Top Consumers</h2>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-              live snapshot
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-200">Current Top Consumers</h2>
+            <span className="text-xs text-gray-400 dark:bg-gray-400 dark:text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full">
+              Live Snapshot
             </span>
           </div>
           {/* CPU / Memory toggle */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center bg-gray-100 rounded-lg p-1 dark:bg-gray-400">
             {["cpu", "memory"].map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`text-xs px-3 py-1 rounded-md transition-colors ${
+                className={`text-xs px-3 py-1 rounded-md transition-colors${
                   tab === t
-                    ? "bg-white text-gray-900 shadow-sm font-medium"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-gray-200 font-medium hover:cursor-pointer"
+                    : "text-gray-900 hover:text-gray-700 dark:hover:text-gray-900 hover:cursor-pointer"
                 }`}
               >
                 {t === "cpu" ? "CPU" : "Memory"}
@@ -63,7 +63,7 @@ const topProcesses = useMemo(() => {
 
         {topProcesses.length === 0 ? (
           <div className="flex items-center justify-center py-10">
-            <p className="text-sm text-gray-400">No process data available.</p>
+            <p className="text-sm text-gray-400 dark:text-gray-300">No process data available.</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>

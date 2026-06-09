@@ -41,9 +41,9 @@ function RegisterModal({ onClose, onRegistered }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-lg mx-4 shadow-xl">
+      <div className="bg-white rounded-xl w-full max-w-lg mx-4 shadow-xl dark:bg-gray-700">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900">Register Process</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-gray-200">Register Process</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
@@ -54,19 +54,19 @@ function RegisterModal({ onClose, onRegistered }) {
             placeholder="Search by name..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full border border-gray-300 dark:text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
           />
         </div>
         <div className="overflow-y-auto max-h-96">
           {loading ? (
-            <p className="text-gray-400 text-sm p-4">Loading processes...</p>
+            <p className="text-gray-400 dark:text-gray-300 text-sm p-4">Loading processes...</p>
           ) : filtered.length === 0 ? (
-            <p className="text-gray-400 text-sm p-4">No processes found.</p>
+            <p className="text-gray-400 dark:text-gray-300 text-sm p-4">No processes found.</p>
           ) : (
             filtered.map(p => (
-              <div key={p.pid} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-100">
+              <div key={p.pid} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{p.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-300">{p.name}</p>
                   <p className="text-xs text-gray-400">PID: {p.pid} • CPU: {p.cpu_percentage?.toFixed(2)}% • Mem: {p.memory_percentage?.toFixed(2)}%</p>
                 </div>
                 <button
@@ -151,14 +151,14 @@ const handleRemove = (process) => {
 }
 
 
-  if (loading) return <div className="min-h-screen bg-gray-50 p-8 text-gray-400">Loading...</div>
+  if (loading) return <div className="min-h-screen bg-gray-50 p-8 text-gray-400 dark:bg-gray-700">Loading...</div>
   if (error) return <div className="min-h-screen bg-gray-50 p-8 text-red-400">{error}</div>
 
   return (
-    <div className=" bg-gray-50 p-8 mt-5 rounded-xl shadow">
+    <div className=" bg-gray-50 p-8 mt-5 rounded-xl shadow dark:bg-gray-700 border border-gray-200">
       <div className="max-w-4xl">
         <div className="flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-xl font-bold text-gray-900">Process Control</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-300">Process Control</h1>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg hover:cursor-pointer"
@@ -168,18 +168,18 @@ const handleRemove = (process) => {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 dark:bg-gray-700">
           <div className="space-y-3">
             {processes.length === 0 ? (
-              <p className="text-gray-400 text-sm">No managed processes yet.</p>
+              <p className="text-gray-400 text-sm dark:text-gray-300">No managed processes yet.</p>
             ) : (
                   processes.map(process => (
                 <div
                   key={process.id}
-                  className={`relative flex items-center justify-between p-3 rounded-lg transition-colors ${
+                  className={`relative flex items-center justify-between p-3 rounded-lg transition-colors dark:bg-gray-600 ${
                     process.status === 'stopped'
                       ? 'bg-gray-100 opacity-60'
-                      : 'bg-gray-50 hover:bg-gray-100'
+                      : 'bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-4 flex-1">
@@ -190,10 +190,10 @@ const handleRemove = (process) => {
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900">{process.name}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-300">{process.name}</p>
                         {process.pinned && <Pin className="w-3 h-3 text-blue-500" />}
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-300">
                         PID: {process.pid} • CPU: {process.cpu_percentage?.toFixed(2)}% • Memory: {process.memory_percentage?.toFixed(2)}%
                       </p>
                     </div>
