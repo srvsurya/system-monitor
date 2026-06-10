@@ -3,6 +3,7 @@ package db
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
@@ -127,10 +128,14 @@ func initSchema() { // migrations moved to initSchema
         mem_threshold_mb    REAL DEFAULT 500.0,
         duplicate_threshold INTEGER DEFAULT 3,
         smart_heal_enabled  INTEGER DEFAULT 0,
+        retention_days      INTEGER DEFAULT 30,
         updated_at          TIMESTAMP DEFAULT (datetime('now'))
     );
         INSERT OR IGNORE INTO cleaner_settings (id) VALUES (1);`
 
 	DB.MustExec(schema)
-
+	_, err := DB.Exec(`ALTER TABLE cleaner_settings ADD COLUMN retention_days INTEGER DEFAULT 30`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+		log.Fatal(err)
+	}
 }

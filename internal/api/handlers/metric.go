@@ -64,13 +64,15 @@ func GetStatsHistory(db *sqlx.DB) gin.HandlerFunc {
 					return
 				}
 			}
+			fromFmt := from.UTC().Format("2006-01-02 15:04:05")
+			toFmt := to.UTC().Format("2006-01-02 15:04:05")
 
 			err = db.Select(&metrics, `
 				SELECT * FROM system_metrics
 				WHERE timestamp BETWEEN ? AND ?
 				ORDER BY timestamp ASC
 				LIMIT ?
-			`, from, to, limit)
+			`, fromFmt, toFmt, limit)
 		} else {
 			err = db.Select(&metrics, `
 				SELECT * FROM system_metrics

@@ -42,7 +42,7 @@ func main() {
 			log.Println("Sending email failed:", err)
 		}
 	})
-
+	cleaner.RunRetentionPruner(db.DB)
 	r := api.NewRouter(db.DB, alertEngine, mailer, cleanerService)
 	// wrap gin inside http.Server so we can call the func Shutdown() on it
 	srv := &http.Server{

@@ -22,20 +22,23 @@ export default function HistoryChart({ className = '' }) {
         const from = new Date(now.getTime() - range * 60 * 1000)
         const res = await api.get('/api/v1/stats/history', {
           params: {
-            from: formatLocal(from),
-            to: formatLocal(now),
+            from: from.toISOString().replace('Z', ''),
+            to: now.toISOString().replace('Z', ''),
             limit: 1000,
           }
         })
         const reversed = [...(res.data || [])].reverse()
         if (reversed.length === 0) return
-        const formatted = reversed.map(m => ({
-          time: new Date(m.timestamp.replace('Z', '')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          cpu: parseFloat(m.cpu_usage.toFixed(1)),
-          memory: parseFloat(((m.memory_used / m.memory_total) * 100).toFixed(1)),
-          disk: parseFloat(((m.disk_used / m.disk_total) * 100).toFixed(1)),
-          network: parseFloat((m.net_download / 1024).toFixed(1)),
-        }))
+        const formatted = reversed.map(m => {
+          console.log(m.timestamp)
+          return {
+            time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            cpu: parseFloat(m.cpu_usage.toFixed(1)),
+            memory: parseFloat(((m.memory_used / m.memory_total) * 100).toFixed(1)),
+            disk: parseFloat(((m.disk_used / m.disk_total) * 100).toFixed(1)),
+            network: parseFloat((m.net_download / 1024).toFixed(1)),
+          }
+        })
         setData(formatted)
       } catch (err) {
         console.error('Failed to fetch history:', err)
