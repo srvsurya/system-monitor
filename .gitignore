@@ -1,1 +1,6 @@
 .env
+system-monitor
+embedfs/dist
+monitor.db
+monitor.db-shm
+monitor.db-wal

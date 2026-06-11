@@ -3,9 +3,16 @@ package api
 import (
 	"time"
 
+	"io"
+	"io/fs"
+	"net/http"
+
+	"strings"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	"github.com/srvsurya/system-monitor/embedfs"
 	"github.com/srvsurya/system-monitor/internal/alerts"
 	"github.com/srvsurya/system-monitor/internal/api/handlers"
 	"github.com/srvsurya/system-monitor/internal/api/middleware"
@@ -14,11 +21,15 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleaner *cleaner.Cleaner) *gin.Engine {
+func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleaner *cleaner.Cleaner, secret string) *gin.Engine {
 	r := gin.Default()
 	// CORS
+	allowedOrigins := []string{"http://localhost:8080"}
+	if gin.Mode() != gin.ReleaseMode { // if it isn't in release mode, append the front end port ONLY for dev testing
+		allowedOrigins = append(allowedOrigins, "http://localhost:5173")
+	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "PUT", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
@@ -34,11 +45,11 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 	auth := r.Group("/auth")
 	{
 		auth.POST("/register", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.Register(db, mailer))
-		auth.POST("/login", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.Login(db))
+		auth.POST("/login", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.Login(db, secret))
 		auth.GET("/verify", middleware.RateLimit(rate.Every(time.Minute)/10, 5), handlers.VerifyEmail(db))
 	}
 	v1 := r.Group("api/v1")
-	v1.Use(middleware.AuthRequired(db))
+	v1.Use(middleware.AuthRequired(db, secret))
 	{
 		// user related endpoints
 
@@ -77,5 +88,26 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 		// smart heal
 		v1.POST("/healer/toggle", handlers.ToggleSmartHeal(db))
 	}
+	distFS, _ := fs.Sub(embedfs.FrontendFS, "dist")
+	httpFS := http.FS(distFS)
+
+	r.GET("/", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html", func() []byte {
+			f, _ := distFS.Open("index.html")
+			b, _ := io.ReadAll(f)
+			return b
+		}())
+	})
+	r.GET("/assets/*filepath", func(c *gin.Context) {
+		path := strings.TrimPrefix(c.Param("filepath"), "/")
+		c.FileFromFS("assets/"+path, httpFS)
+	})
+	r.NoRoute(func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html", func() []byte {
+			f, _ := distFS.Open("index.html")
+			b, _ := io.ReadAll(f)
+			return b
+		}())
+	})
 	return r
 }

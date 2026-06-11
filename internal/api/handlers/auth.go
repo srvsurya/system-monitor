@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -139,7 +138,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func Login(db *sqlx.DB) gin.HandlerFunc {
+func Login(db *sqlx.DB, jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -185,7 +184,7 @@ func Login(db *sqlx.DB) gin.HandlerFunc {
 			"exp":     expiresAt.Unix(),
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenStr, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+		tokenStr, err := token.SignedString([]byte(jwtSecret))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 			log.Printf("Failed to generate JWT token")

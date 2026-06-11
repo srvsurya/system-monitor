@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"crypto/rand"
+	"encoding/hex"
+
 	"github.com/joho/godotenv"
 	"github.com/srvsurya/system-monitor/internal/alerts"
 	"github.com/srvsurya/system-monitor/internal/api"
@@ -21,10 +24,18 @@ import (
 	"github.com/srvsurya/system-monitor/internal/notify"
 )
 
+func generateRandomSecret() string { // For JWT in deployment
+	b := make([]byte, 32)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
 func main() {
 	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading env file")
+	// JWT secret passed down to router, then middleware and Login
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = generateRandomSecret()
 	}
 	//logger init
 	zaplog, err := logger.New(true)
@@ -43,7 +54,7 @@ func main() {
 		}
 	})
 	cleaner.RunRetentionPruner(db.DB)
-	r := api.NewRouter(db.DB, alertEngine, mailer, cleanerService)
+	r := api.NewRouter(db.DB, alertEngine, mailer, cleanerService, secret)
 	// wrap gin inside http.Server so we can call the func Shutdown() on it
 	srv := &http.Server{
 		Addr:    ":8080",

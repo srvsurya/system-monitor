@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func AuthRequired(db *sqlx.DB) gin.HandlerFunc {
+func AuthRequired(db *sqlx.DB, jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// gets the bearer token
 		authHeader := c.GetHeader("Authorization")
@@ -30,7 +29,7 @@ func AuthRequired(db *sqlx.DB) gin.HandlerFunc {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
-			return []byte(os.Getenv("JWT_SECRET")), nil
+			return []byte(jwtSecret), nil
 		})
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
