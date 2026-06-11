@@ -18,7 +18,7 @@ func RunRetentionPruner(db *sqlx.DB) {
 		query string
 	}{ //  these are the tables to be wiped in the retention policy. Add or remove tables as you see fit or for future configuration
 		{"system_metrics", `DELETE FROM system_metrics WHERE timestamp < datetime('now', '-' || ? || ' days')`},
-		{"alerts", `DELETE FROM alerts WHERE status = 'resolved' AND triggered_at < datetime('now', '-' || ? || ' days')`},
+		{"alerts", `DELETE FROM alerts WHERE triggered_at < datetime('now', '-' || ? || ' days')`},
 		{"system_actions", `DELETE FROM system_actions WHERE created_at < datetime('now', '-' || ? || ' days')`},
 	}
 
