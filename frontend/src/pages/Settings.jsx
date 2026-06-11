@@ -8,6 +8,7 @@ export default function Settings() {
   const [theme, setTheme] = useDarkMode();
   const navigate = useNavigate()
   const [alertEmail, setAlertEmail] = useState('')
+  const [retention,setRetention] = useState(30)
   const [cpuThreshold, setCpuThreshold] = useState(80)
   const [memThreshold, setMemThreshold] = useState(80)
   const [duration, setDuration] = useState(1)
@@ -33,6 +34,9 @@ export default function Settings() {
         ])
         if (settingsRes.data.alert_email) {
           setAlertEmail(settingsRes.data.alert_email)
+        }
+        if (settingsRes.data.retention_days){
+          setRetention(settingsRes.data.retention_days)
         }
         const rules = rulesRes.data || []
         const cpu = rules.find(r => r.metric === 'cpu_usage')
@@ -64,7 +68,7 @@ export default function Settings() {
     setError(null)
     try {
       await Promise.all([
-        api.patch('/api/v1/user/settings', { alert_email: alertEmail }),
+        api.patch('/api/v1/user/settings', { alert_email: alertEmail,retention_days: retention}),
         api.post('/api/v1/alerts/rules', {
           metric: 'cpu_usage',
           operator: '>',
@@ -152,6 +156,15 @@ export default function Settings() {
                 🌙 Dark Mode
               </option>
             </select>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-2">
+              Data Retention Policy
+            </label>
+            <input
+            type="number"
+            value={retention}
+            onChange={e => setRetention(Number(e.target.value))}
+            className="w-full border border-gray-300 dark:text-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 mb-2"
+          />
           </div>
           
         </div>

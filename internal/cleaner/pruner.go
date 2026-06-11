@@ -10,14 +10,14 @@ func RunRetentionPruner(db *sqlx.DB) {
 	var retentionDays int
 	err := db.QueryRow(`SELECT retention_days FROM cleaner_settings WHERE id = 1`).Scan(&retentionDays)
 	if err != nil || retentionDays <= 0 {
-		retentionDays = 5 // fallback default
+		retentionDays = 30 // fallback default
 	}
 
 	tables := []struct {
 		name  string
 		query string
 	}{ //  these are the tables to be wiped in the retention policy. Add or remove tables as you see fit or for future configuration
-		{"system_metrics", `DELETE FROM system_metrics WHERE timestamp < datetime('now', '-' || ? || ' minutes')`},
+		{"system_metrics", `DELETE FROM system_metrics WHERE timestamp < datetime('now', '-' || ? || ' days')`},
 		{"alerts", `DELETE FROM alerts WHERE status = 'resolved' AND triggered_at < datetime('now', '-' || ? || ' days')`},
 		{"system_actions", `DELETE FROM system_actions WHERE created_at < datetime('now', '-' || ? || ' days')`},
 	}
