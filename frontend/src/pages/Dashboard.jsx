@@ -1,7 +1,7 @@
 import {useState, useEffect} from 'react'
 import { useWS } from '../context/WSContext'
 import MetricCard from '../components/MetricCard'
-import Processes from './Processes'
+import ProcessesManaged from '../components/Processes'
 import { Cpu, HardDrive, Activity, MemoryStick, Settings, LogOut, Zap, Shield} from 'lucide-react';
 import HistoryChart from '../components/HistoricalCharts';
 import ActiveAlerts from '../components/AlertSection';
@@ -168,7 +168,7 @@ const handleHealToggle = async () => {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <Processes />
+            <ProcessesManaged />
           </div>
         </div>
       </div>

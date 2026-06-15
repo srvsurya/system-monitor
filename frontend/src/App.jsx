@@ -20,9 +20,9 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-      <Route path="/processes" element={<ProtectedRoute><Processes /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
+      <Route path="/processes" element={<ProtectedRoute><Processes /></ProtectedRoute>} />
     </Routes>
   )
 }
