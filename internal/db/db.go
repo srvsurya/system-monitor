@@ -93,7 +93,6 @@ func initSchema() { // migrations moved to initSchema
         process_id   INTEGER REFERENCES managed_processes(id) ON DELETE CASCADE,
         action_type  TEXT,
         reason       TEXT,
-        metric_value REAL,
         created_at   TIMESTAMP DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS alert_engine_state (
@@ -136,6 +135,10 @@ func initSchema() { // migrations moved to initSchema
 	DB.MustExec(schema)
 	_, err := DB.Exec(`ALTER TABLE cleaner_settings ADD COLUMN retention_days INTEGER DEFAULT 30`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+		log.Fatal(err)
+	}
+	_, err = DB.Exec(`ALTER TABLE system_actions DROP COLUMN metric_value`)
+	if err != nil && !strings.Contains(err.Error(), "no such column") {
 		log.Fatal(err)
 	}
 }

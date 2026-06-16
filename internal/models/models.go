@@ -64,12 +64,11 @@ type ManagedProcess struct {
 }
 
 type SystemAction struct {
-	ID          int       `db:"id"           json:"id"`
-	ProcessID   *int      `db:"process_id"   json:"process_id"`
-	ActionType  string    `db:"action_type"  json:"action_type"`
-	Reason      string    `db:"reason"       json:"reason"`
-	MetricValue float64   `db:"metric_value" json:"metric_value"`
-	CreatedAt   time.Time `db:"created_at"   json:"created_at"`
+	ID         int       `db:"id"           json:"id"`
+	ProcessID  *int      `db:"process_id"   json:"process_id"`
+	ActionType string    `db:"action_type"  json:"action_type"`
+	Reason     string    `db:"reason"       json:"reason"`
+	CreatedAt  time.Time `db:"created_at"   json:"created_at"`
 }
 
 type ProcessBaseline struct {

@@ -94,7 +94,11 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
 		db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = ?`, id)
 		db.QueryRow(`SELECT pinned FROM managed_processes WHERE id = ?`, id).Scan(&pinned)
-		db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES(? ,?, ?)`, id, "Stop", "Process stopped via API")
+		_, err = db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES(? ,?, ?)`, id, "Stop", "Process stopped via API")
+		if err != nil {
+			log.Printf("Error at system actions insertion:%v", err)
+		}
+
 		if !pinned {
 			db.Exec(`DELETE FROM managed_processes WHERE id = ?`, id)
 		}
@@ -326,5 +330,18 @@ func RemoveFromManaged(db *sqlx.DB) gin.HandlerFunc {
 		}
 		db.Exec(`DELETE FROM managed_processes WHERE id = ?`, id)
 		c.JSON(http.StatusOK, gin.H{"message": "Removed from managed"})
+	}
+}
+func GetProcessActions(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var systemActions []models.SystemAction
+		err := db.Select(&systemActions, `SELECT * FROM system_actions`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+			log.Printf("Error at system actions handler: %v", err)
+			return
+		}
+		c.JSON(http.StatusOK, systemActions)
+
 	}
 }

@@ -150,7 +150,6 @@ const handleHealToggle = async () => {
               <Zap className="w-4 h-4" />
               {optimizing ? 'Optimizing...' : 'Optimize'}
             </button>
-
             <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm dark:bg-gray-500">
               <Shield className="w-4 h-4 text-gray-500 dark:text-white" />
               <span className="text-xs text-gray-600 dark:text-white">Smart Heal</span>
@@ -170,6 +169,13 @@ const handleHealToggle = async () => {
           <div className="flex-1 min-w-0">
             <ProcessesManaged />
           </div>
+          { /* System actions history button */ }
+          <button
+            onClick={() => navigate("/actions")}
+            className="mt-4 w-fit ml-2 bg-blue-600 text-white text-xs px-4 py-2 rounded-xl hover:scale-105 transition-transform duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >System Action Log
+          </button>
+          {/*stop*/}
         </div>
       </div>
       </div>

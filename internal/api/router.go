@@ -78,6 +78,7 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 		v1.GET("/processes/managed", handlers.GetManagedProcesses(db)) // only managed processes
 		v1.PATCH("/processes/:id", handlers.UpdatePinnedStatus(db))
 		v1.DELETE("/processes/:id/remove", handlers.RemoveFromManaged(db))
+		v1.GET("/processes/actions", handlers.GetProcessActions(db)) // app action history
 		// cleaner routes
 		v1.POST("/cleaner/optimize", handlers.Optimize(db, cleaner))
 		v1.GET("/cleaner/ignore", handlers.GetIgnoreList(db))
