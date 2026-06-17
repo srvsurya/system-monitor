@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"time"
 
+	"strings"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/srvsurya/system-monitor/internal/models"
@@ -127,7 +129,16 @@ func (h *Healer) heal(p models.ManagedProcess, reason string) {
 	}
 
 	// restart — same as RestartProcess handler
-	cmd := exec.Command("./stressor-heal")
+	if p.Command == nil || *p.Command == "" {
+		log.Printf("[healer] no command stored for %s, cannot restart", p.Name)
+		return
+	}
+	parts := strings.Fields(*p.Command)
+	if len(parts) == 0 {
+		log.Printf("[healer] command stored for %s not found, cannot restart", p.Name)
+		return
+	}
+	cmd := exec.Command(parts[0], parts[1:]...)
 	if err := cmd.Start(); err != nil {
 		log.Printf("[healer] failed to restart %s: %v", p.Name, err)
 		return

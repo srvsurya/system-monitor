@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"strings"
+
 	"runtime"
 
 	"log"
@@ -130,8 +132,17 @@ func RestartProcess(db *sqlx.DB) gin.HandlerFunc {
 		}
 
 		// Personal Note: After process kill, the PID resets. We restart using the registered process command stored in the db, this will stay persistent.
-		// Personal Note: For now, ONLY stressor can be in managed processes. Custom managed processes scope in the later weeks.
-		cmd := exec.Command("./stressor") // executable CPU burner
+		// Personal Note: For now, ONLY stressor can be in managed processes. Custom managed processes scope in the later weeks. P.S -> Removed hardcoding.
+		if managed.Command == nil || *managed.Command == "" {
+			log.Printf("[Restart] cannot function because command line for the process %s cannot be found", managed.Name)
+			return
+		} // executable CPU burner
+		parts := strings.Fields(*managed.Command)
+		if len(parts) == 0 {
+			log.Printf("[restart] empty command for %s, cannot restart", managed.Name)
+			return
+		}
+		cmd := exec.Command(parts[0], parts[1:]...)
 		if err := cmd.Start(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to restart process"})
 			log.Printf("Failed to restart process: %v", err)
