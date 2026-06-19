@@ -41,6 +41,9 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+	store := handlers.SQLStatsStore{
+		DB: db,
+	}
 	// route group for v1
 	auth := r.Group("/auth")
 	{
@@ -59,7 +62,7 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 		//logout
 		v1.POST("/logout", handlers.Logout(db))
 		//metric routes
-		v1.GET("/stats", middleware.RateLimit(rate.Every(time.Minute)/60, 5), handlers.GetCurrentStats(db))
+		v1.GET("/stats", middleware.RateLimit(rate.Every(time.Minute)/60, 5), handlers.GetCurrentStats(store))
 		v1.GET("/stats/history", middleware.RateLimit(rate.Every(time.Second*5), 10), handlers.GetStatsHistory(db))
 		// websocket init route
 		v1.GET("/ws", handlers.ServeWS(hub))

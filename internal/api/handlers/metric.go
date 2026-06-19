@@ -13,15 +13,16 @@ import (
 )
 
 // Function to get latest metrics - For live dashboard
-func GetCurrentStats(db *sqlx.DB) gin.HandlerFunc {
+func GetCurrentStats(store StatsStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var metric models.SystemMetric
-		err := db.Get(&metric, `SELECT * FROM system_metrics ORDER BY TIMESTAMP DESC LIMIT 1`)
+
+		metric, err := store.GetLatestMetric()
+
 		if err != nil {
 			c.JSON(500, gin.H{"message": "Query Failed"})
-			log.Printf("/stats metric query failed: %v", err)
 			return
 		}
+
 		c.JSON(200, metric)
 	}
 }
