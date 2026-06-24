@@ -65,3 +65,9 @@ Your data is stored locally in `monitor.db` in the same directory as the binary.
 - [ ] Desktop notifications
 - [ ] API pagination
 - [ ] Windows/macOS support
+
+## v1.1 Notes (EC2 Deployment):
+- Added system action log in the front end.
+- Removed hardcoding for process start and restart. This means that ANY process can be started, healed and restarted that doesn't have dependency processes. For example, GUI apps that have multiple other processes tied to it CANNOT be restarted as there would be multiple cmds needed to trigger a restart for the child processes. However, for the end user experience, it would not have an impact since processes likely to be put in the managed list is server related and service processes like nginx. 
+- Updated CORS config to allow requests from the d3 hosted frontend.
+- Updated the frontend axios baseURL to point to the EC2 public IP.
