@@ -41,7 +41,7 @@ def upload_to_s3(data: list[dict], bucket: str, prefix: str):
         f"year={now.strftime('%Y')}/"
         f"month={now.strftime('%m')}/"
         f"day={now.strftime('%d')}/"
-        f"hour={now.strftime('%H')}"
+        f"hour={now.strftime('%H')}/"
         f"metrics.json"
     )
 

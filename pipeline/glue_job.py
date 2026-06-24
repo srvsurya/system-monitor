@@ -53,7 +53,7 @@ df = df.withColumn("year", F.year("timestamp"))
 
 # --- Step 4: Anomaly flagging ---
 # same logic as your Smart Heal — flag if cpu > 2x rolling average
-window = Window.orderBy("timestamp").rowsBetween(-10, 0)
+window = Window.partitionBy("year", "month", "day", "hour").orderBy("timestamp").rowsBetween(-10, 0)
 
 df = df.withColumn("cpu_rolling_avg", F.avg("cpu_usage").over(window))
 df = df.withColumn(

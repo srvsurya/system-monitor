@@ -5,3 +5,8 @@ monitor.db
 monitor.db-shm
 monitor.db-wal
 venv/
+pipeline/airflow/logs/
+pipeline/airflow/airflow.db
+pipeline/airflow/airflow.cfg
+pipeline/airflow/webserver_config.py
+pipeline/airflow/airflow.cfg.old
