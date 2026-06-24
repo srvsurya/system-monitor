@@ -5,8 +5,8 @@ import os
 from datetime import datetime, timezone, timedelta
 
 # --- Config ---
-DB_PATH = "/home/user/Desktop/Projects/resourcemonitor/system-monitor/monitor.db"  # update this
-S3_BUCKET = "saurav-system-monitor-pipeline"            # update this
+DB_PATH = "/home/user/Desktop/Projects/resourcemonitor/system-monitor/monitor.db"
+S3_BUCKET = "saurav-system-monitor-pipeline"      
 S3_PREFIX = "raw/metrics"
 
 def get_last_hour_metrics(db_path: str) -> list[dict]:

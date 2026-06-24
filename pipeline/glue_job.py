@@ -73,7 +73,7 @@ hourly = df.groupBy("year", "month", "day", "hour").agg(
     F.count("id").alias("record_count")
 )
 
-# --- Step 6: Write output ---
+
 # write full enriched records
 df.write.mode("overwrite") \
     .partitionBy("year", "month", "day", "hour") \
