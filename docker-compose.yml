@@ -1,0 +1,73 @@
+services:
+
+  # ─────────────────────────────────────────
+  # system-monitor Go backend
+  # ─────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: system-monitor:latest
+    container_name: system-monitor-app
+    restart: unless-stopped
+
+    env_file:
+      - .env                        # JWT_SECRET, GIN_MODE, DB_PATH, etc.
+
+    environment:
+      GIN_MODE: release
+      DB_PATH: /app/data/system_monitor.db
+
+    volumes:
+      # SQLite persistence
+      - sqlite-data:/app/data
+
+      # ── Host metric access ──────────────────────────────────────────────
+      # These give your Go collector visibility into real host CPU/memory/
+      # process data rather than the container's isolated view.
+      - /proc:/host/proc:ro          # CPU, memory, uptime, process list
+      - /sys:/host/sys:ro            # system info, cgroup stats
+      - /etc/hostname:/etc/hostname:ro   # so hostname reads correctly
+
+    # Needed for process management (kill/restart managed processes)
+    # Remove if you only need read-only metrics
+    pid: host
+
+    # Expose internally only — Nginx fronts the public port
+    expose:
+      - "8080"
+
+    networks:
+      - monitor-net
+
+    depends_on: []          # No DB container — SQLite is local
+
+  # ─────────────────────────────────────────
+  # Nginx reverse proxy
+  # ─────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: system-monitor-nginx
+    restart: unless-stopped
+
+    ports:
+      - "80:80"             # Change to "443:443" when you add SSL
+    
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+    networks:
+      - monitor-net
+
+    depends_on:
+      - app
+
+# ─────────────────────────────────────────
+# Named volume — SQLite DB survives container restarts/rebuilds
+# ─────────────────────────────────────────
+volumes:
+  sqlite-data:
+
+networks:
+  monitor-net:
+    driver: bridge

@@ -26,6 +26,9 @@ func NewRouter(db *sqlx.DB, engine *alerts.Engine, mailer *notify.Mailer, cleane
 	// CORS
 	allowedOrigins := []string{"http://localhost:8080",
 		"http://system-monitor-frontend.s3-website.eu-north-1.amazonaws.com", // allow the s3 bucket to make requests to the backend.
+		"http://localhost:80", // for docker
+		"http://13.62.76.208", // ec2 IP also for docker
+		"http://localhost",    // another local port
 	}
 	if gin.Mode() != gin.ReleaseMode { // if it isn't in release mode, append the front end port ONLY for dev testing
 		allowedOrigins = append(allowedOrigins, "http://localhost:5173")

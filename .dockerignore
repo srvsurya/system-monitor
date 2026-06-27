@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Env secrets — never bake into image
+.env
+*.env
+
+# Frontend build artifacts (rebuilt in Docker Stage 1)
+frontend/node_modules
+frontend/dist
+
+# Go build cache
+*.exe
+system-monitor
+
+# SQLite DB files — managed via volume
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# Pipeline venv and airflow (not needed in app image)
+pipeline/venv
+pipeline/airflow
+pipeline/__pycache__
+
+# Editor
+.vscode
+.idea
+*.swp

@@ -9,5 +9,17 @@ export default defineConfig({
   ],
   build: {
     outDir: '../embedfs/dist'
+  },
+  server:{
+    proxy:{
+      '/auth': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/api/v1': {
+        target: 'http://localhost:8080',
+        changeOrigin:true,
+    }
   }
+}
 })

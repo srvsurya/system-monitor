@@ -126,7 +126,7 @@ func Register(db *sqlx.DB, mailer *notify.Mailer) gin.HandlerFunc {
 			userID, token, time.Now().Add(24*time.Hour).Format("2006-01-02 15:04:05"),
 		)
 
-		verifyURL := fmt.Sprintf("http://localhost:8080/auth/verify?token=%s", token)
+		verifyURL := fmt.Sprintf("http://localhost/auth/verify?token=%s", token)
 		mailer.SendVerification(req.Email, verifyURL)
 	}
 }
