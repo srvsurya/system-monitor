@@ -10,6 +10,9 @@ services:
     image: system-monitor:latest
     container_name: system-monitor-app
     restart: unless-stopped
+    privileged: true
+    pid: host
+
 
     env_file:
       - .env                        # JWT_SECRET, GIN_MODE, DB_PATH, etc.
@@ -31,8 +34,7 @@ services:
 
     # Needed for process management (kill/restart managed processes)
     # Remove if you only need read-only metrics
-    pid: host
-
+    
     # Expose internally only — Nginx fronts the public port
     expose:
       - "8080"

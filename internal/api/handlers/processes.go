@@ -96,9 +96,12 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
 		db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = ?`, id)
 		db.QueryRow(`SELECT pinned FROM managed_processes WHERE id = ?`, id).Scan(&pinned)
+		log.Printf("Attempting system_actions insert for process_id: %d, action: Stop", id)
 		_, err = db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES(? ,?, ?)`, id, "Stop", "Process stopped via API")
 		if err != nil {
 			log.Printf("Error at system actions insertion:%v", err)
+		} else {
+			log.Printf("system_actions insert success for id:%d", id)
 		}
 
 		if !pinned {

@@ -49,18 +49,10 @@ FROM alpine:3.19
 # ca-certificates for any outbound HTTPS (e.g. future webhooks)
 RUN apk add --no-cache ca-certificates tzdata
 
-# Non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
 WORKDIR /app
 
 # Copy only the binary
 COPY --from=go-builder /app/system-monitor .
-
-# SQLite DB lives here — will be a named volume
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app
-
-USER appuser
 
 # Port your Gin server listens on
 EXPOSE 8080
