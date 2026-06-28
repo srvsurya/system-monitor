@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"log"
+	"os"
 
 	"github.com/srvsurya/system-monitor/internal/models"
 )
@@ -44,6 +45,7 @@ func Register(db *sqlx.DB, mailer *notify.Mailer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req RegisterRequest
 		var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+		baseURL := os.Getenv("BASE_URL")
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			log.Printf("Failed to bind register details to JSON: %v", err)
@@ -126,7 +128,7 @@ func Register(db *sqlx.DB, mailer *notify.Mailer) gin.HandlerFunc {
 			userID, token, time.Now().Add(24*time.Hour).Format("2006-01-02 15:04:05"),
 		)
 
-		verifyURL := fmt.Sprintf("http://localhost/auth/verify?token=%s", token)
+		verifyURL := fmt.Sprintf("%s/auth/verify?token=%s", baseURL, token)
 		mailer.SendVerification(req.Email, verifyURL)
 	}
 }
