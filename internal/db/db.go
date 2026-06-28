@@ -90,9 +90,11 @@ func initSchema() { // migrations moved to initSchema
     );
     CREATE TABLE IF NOT EXISTS system_actions (
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
-        process_id   INTEGER REFERENCES managed_processes(id) ON DELETE CASCADE,
+        process_id   INTEGER REFERENCES managed_processes(id) ON DELETE SET NULL,
+        process_name TEXT,
         action_type  TEXT,
         reason       TEXT,
+        smart_heal_metric INTEGER,
         created_at   TIMESTAMP DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS alert_engine_state (

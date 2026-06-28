@@ -12,9 +12,10 @@ export default function Processes() {
   const [registering, setRegistering] = useState(null)
   const [sortKey, setSortKey] = useState('cpu_percentage')
   const [sortDir, setSortDir] = useState('desc')
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const bottomRef = useRef(null)
   const navigate = useNavigate()
+
+  const [page, setPage] = useState(1)
+  
 
   useEffect(() => {
     const fetchProcesses = async () => {
@@ -32,7 +33,7 @@ export default function Processes() {
 
   // Reset visible count when search or sort changes
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE)
+  setPage(1)
   }, [search, sortKey, sortDir])
 
   const handleSort = (key) => {
@@ -69,24 +70,8 @@ export default function Processes() {
       return sortDir === 'asc' ? aVal - bVal : bVal - aVal
     })
 
-  const visible = sorted.slice(0, visibleCount)
-  const hasMore = visibleCount < sorted.length
-
-  // IntersectionObserver — when the sentinel div is visible, load more
-  const observerRef = useCallback((node) => {
-    if (!node) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setVisibleCount(c => c + PAGE_SIZE)
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(node)
-    bottomRef.current = observer
-    return () => observer.disconnect()
-  }, [hasMore])
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const visible = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const SortIcon = ({ col }) => {
     if (sortKey !== col) return <ChevronsUpDown className="w-3 h-3 text-gray-400" />
@@ -108,82 +93,101 @@ export default function Processes() {
   )
 
   return (
-    <div className="bg-white p-4 dark:bg-gray-800 shadow border border-gray-200 dark:border-gray-700 min-h-[calc(100vh-0px)]">
-      <div className="flex justify-between">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-          Register Process
-        </h1>
-        <button onClick={() => navigate('/')} className="text-sm text-gray-500 hover:text-gray-700 hover:cursor-pointer mb-6 dark:hover:text-white flex items-center gap-1">
-          ← Back to Dashboard
-        </button>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 min-h-[calc(100vh-200px)]">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-          />
-        </div>
-
-        <div className="overflow-y-auto">
-          {loading ? (
-            <p className="text-gray-400 dark:text-gray-300 text-sm p-4">Loading processes...</p>
-          ) : sorted.length === 0 ? (
-            <p className="text-gray-400 dark:text-gray-300 text-sm p-4">No processes found.</p>
-          ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
-                <tr>
-                  <HeaderCell col="name" label="Name" />
-                  <HeaderCell col="cpu_percentage" label="CPU %" />
-                  <HeaderCell col="memory_percentage" label="Mem %" />
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map(p => (
-                  <tr
-                    key={p.pid}
-                    className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-300">{p.name}</p>
-                      <p className="text-xs text-gray-400">PID: {p.pid}</p>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      {p.cpu_percentage?.toFixed(2)}%
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      {p.memory_percentage?.toFixed(2)}%
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleRegister(p.pid)}
-                        disabled={registering === p.pid}
-                        className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg"
-                      >
-                        {registering === p.pid ? '...' : 'Register'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {/* Sentinel div — IntersectionObserver watches this */}
-                {hasMore && (
-                  <tr>
-                    <td colSpan={4}>
-                      <div ref={observerRef} className="h-8" />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+  <div className="bg-white p-4 dark:bg-gray-800 shadow border border-gray-200 dark:border-gray-700 min-h-[calc(100vh-0px)]">
+    <div className="flex justify-between">
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
+        Register Process
+      </h1>
+      <button
+        onClick={() => navigate('/')}
+        className="text-sm text-gray-500 hover:text-gray-700 hover:cursor-pointer mb-6 dark:hover:text-white flex items-center gap-1"
+      >
+        ← Back to Dashboard
+      </button>
     </div>
-  )
+
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 min-h-[calc(100vh-200px)]">
+      <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+        />
+      </div>
+
+      <div className="overflow-y-auto">
+        {loading ? (
+          <p className="text-gray-400 dark:text-gray-300 text-sm p-4">Loading processes...</p>
+        ) : sorted.length === 0 ? (
+          <p className="text-gray-400 dark:text-gray-300 text-sm p-4">No processes found.</p>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
+              <tr>
+                <HeaderCell col="name" label="Name" />
+                <HeaderCell col="cpu_percentage" label="CPU %" />
+                <HeaderCell col="memory_percentage" label="Mem %" />
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map(p => (
+                <tr
+                  key={p.pid}
+                  className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-300">{p.name}</p>
+                    <p className="text-xs text-gray-400">PID: {p.pid}</p>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {p.cpu_percentage?.toFixed(2)}%
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {p.memory_percentage?.toFixed(2)}%
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => handleRegister(p.pid)}
+                      disabled={registering === p.pid}
+                      className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg"
+                    >
+                      {registering === p.pid ? '...' : 'Register'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {!loading && sorted.length > 0 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700">
+          <span className="text-xs text-gray-400">
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => p - 1)}
+              disabled={page === 1}
+              className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-gray-600 hover:cursor-pointer dark:text-gray-300"
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page === totalPages}
+              className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-gray-600 hover:cursor-pointer dark:text-gray-300 "
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)
 }

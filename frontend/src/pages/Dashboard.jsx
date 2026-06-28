@@ -26,7 +26,7 @@ export default function Dashboard() {
   const fetchHealState = async () => {
       try {
           const res = await api.get('/api/v1/cleaner/settings')
-          setHealEnabled(res.data.smart_heal_enabled === 1)
+          setHealEnabled(!!res.data.smart_heal_enabled)
       } catch (err) {
           console.error('Failed to fetch heal state')
       }

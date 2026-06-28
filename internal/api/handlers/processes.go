@@ -96,7 +96,7 @@ func StopProcess(db *sqlx.DB) gin.HandlerFunc { // stop process ONLY from manage
 		c.JSON(http.StatusOK, gin.H{"message": "Process stopped"})
 		db.Exec(`UPDATE managed_processes SET status = 'stopped' WHERE id = ?`, id)
 		db.QueryRow(`SELECT pinned FROM managed_processes WHERE id = ?`, id).Scan(&pinned)
-		_, err = db.Exec(`INSERT INTO system_actions(process_id,action_type,reason) VALUES(? ,?, ?)`, id, "Stop", "Process stopped via API")
+		_, err = db.Exec(`INSERT INTO system_actions(process_id,process_name, action_type,reason) VALUES(? ,? ,?, ?)`, id, managed.Name, "Stop", "Process stopped via API")
 		if err != nil {
 			log.Printf("Error at system actions insertion:%v", err)
 		}
@@ -159,8 +159,8 @@ func RestartProcess(db *sqlx.DB) gin.HandlerFunc {
 
 		// log the action
 		db.Exec(`
-			INSERT INTO system_actions (process_id, action_type, reason)
-			VALUES (?, 'restart', 'manual restart via API')`, id)
+			INSERT INTO system_actions (process_id, process_name, action_type, reason)
+			VALUES (?, ?, 'restart', 'manual restart via API')`, id, managed.Name)
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": fmt.Sprintf("process restarted with new pid %d", newPID),

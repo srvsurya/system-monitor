@@ -66,14 +66,21 @@ func (h *Healer) Evaluate(procs []models.ManagedProcess) {
 		memAnomaly := mem > baseline.AvgMemory*AnomalyMultiplier
 
 		if cpuAnomaly || memAnomaly {
-			reason := "cpu anomaly"
-			if memAnomaly {
-				reason = "memory anomaly"
-			}
+			var reason string
+			var metric float64
+
 			if cpuAnomaly && memAnomaly {
 				reason = "cpu and memory anomaly"
+				metric = cpu
+			} else if cpuAnomaly {
+				reason = "cpu anomaly"
+				metric = cpu
+			} else {
+				reason = "memory anomaly"
+				metric = mem
 			}
-			h.heal(p, reason)
+
+			h.heal(p, reason, metric)
 		}
 	}
 }
@@ -119,7 +126,7 @@ func (h *Healer) updateBaseline(b models.ProcessBaseline, cpu float64, mem float
 	)
 	return b
 }
-func (h *Healer) heal(p models.ManagedProcess, reason string) {
+func (h *Healer) heal(p models.ManagedProcess, reason string, val float64) {
 	log.Printf("[healer] anomaly detected on %s (%s) — restarting", p.Name, reason)
 
 	// kill
@@ -151,13 +158,16 @@ func (h *Healer) heal(p models.ManagedProcess, reason string) {
 
 	// log the action
 	h.db.Exec(`
-        INSERT INTO system_actions (process_id, action_type, reason)
-        VALUES (?, 'smart_heal', ?)`, p.ID, reason)
+        INSERT INTO system_actions (process_id, process_name, action_type, reason, smart_heal_metric)
+        VALUES (?, ?,'smart_heal',?, ?)`, p.ID, p.Name, reason, val)
 
 	// update cooldown
 	h.db.Exec(`
         UPDATE process_baselines SET last_healed_at = ?
         WHERE process_name = ?`, time.Now().UTC().Format(time.RFC3339), p.Name)
+
+	h.db.Exec(`
+    UPDATE process_baselines SET avg_memory = 0,avg_cpu = 0, sample_count = 0 WHERE process_name = ?`, p.Name)
 
 	log.Printf("[healer] %s restarted with new pid %d", p.Name, newPID)
 }
