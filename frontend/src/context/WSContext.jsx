@@ -14,7 +14,7 @@ export function WSProvider({ children }) {
     console.log('connect called, token:', token)
     if (!token) return
 
-    ws.current = new WebSocket(`ws://localhost/api/v1/ws?token=${token}`) // change according to environment until I code in a dynamic variable
+    ws.current = new WebSocket(`ws://13.62.76.208/api/v1/ws?token=${token}`) // change according to environment until I code in a dynamic variable
 
     ws.current.onopen = () => {
       setConnected(true)
