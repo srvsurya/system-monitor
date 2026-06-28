@@ -26,7 +26,6 @@ func Connect() {
 	DB.Exec("PRAGMA busy_timeout=5000;") // fallback
 	DB.Exec("PRAGMA foreign_keys=ON;")   // make sure foreign key constraint violations are enabled
 	initSchema()
-	DB.Exec(`UPDATE alerts SET status = 0 WHERE status = 1`) // cleaning stale alerts
 	log.Println("Cleaned up stale alerts")
 	log.Println("SQLite connected and schema ready")
 }

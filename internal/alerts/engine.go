@@ -60,12 +60,15 @@ func (e *Engine) ReloadRules() {
 // Evaluate is called on every collector tick with the latest metric row.
 // It checks each rule, updates state, fires alerts, and resolves them.
 func (e *Engine) Evaluate(metric models.SystemMetric) {
+
 	for _, rule := range e.rules {
 		value := extractMetricValue(metric, rule.Metric)
 		state := e.state[rule.ID]
 		ticksRequired := ticksForDuration(rule.DurationSeconds)
 
 		breached := evaluate(value, rule.Operator, rule.Threshold)
+		log.Printf("[alerts] rule %d: %s = %.2f, breached=%v, ticks=%d/%d",
+			rule.ID, rule.Metric, value, breached, state.ConsecutiveTicks, ticksRequired)
 
 		// rundown: if on tick, breach is true - consecutive ticks go up and when met + flag is not triggered yet, the alert is set to fire.
 		// once breach is false, alert is resolved - hence flag and ticks are reset.
@@ -104,6 +107,7 @@ func (e *Engine) Evaluate(metric models.SystemMetric) {
 
 // fireAlert writes an alert row to the DB and triggers the notification callback.
 func (e *Engine) fireAlert(rule models.AlertRule, value float64) {
+	log.Printf("[alerts] fireAlert called for rule %d", rule.ID)
 	_, err := e.db.Exec(`
 		INSERT INTO alerts (rule_id, value, threshold, status)
 		VALUES (?, ?, ?, 1)`,
@@ -135,6 +139,7 @@ func (e *Engine) fireAlert(rule models.AlertRule, value float64) {
 
 // resolveAlert sets resolved_at and status=false on the most recent active alert for a rule.
 func (e *Engine) resolveAlert(ruleID int) {
+	log.Printf("[alerts] resolveAlert called for rule %d", ruleID)
 	_, err := e.db.Exec(`
 		UPDATE alerts
 		SET status = 0, resolved_at = datetime('now')
@@ -199,7 +204,21 @@ func (e *Engine) restoreState() {
 		log.Printf("[alerts] failed to deserialise state: %v", err)
 		return
 	}
-
+	// After restoring state, verify active alerts actually exist in DB
+	for id, s := range restored {
+		if s.Flagged {
+			var count int
+			e.db.Get(&count, `SELECT COUNT(*) FROM alerts WHERE rule_id = ? AND status = 1`, id)
+			if count == 0 {
+				// No active alert in DB, reset flagged state
+				s.Flagged = false
+				s.ConsecutiveTicks = 0
+				e.state[id] = s
+				restored[id] = s
+				log.Printf("[alerts] rule %d: reset flagged state", id)
+			}
+		}
+	}
 	e.state = restored
 	log.Printf("[alerts] restored state for %d rule(s)", len(restored))
 }
